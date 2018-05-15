@@ -15,6 +15,7 @@ import com.opencsv.CSVReader;
 
 import datamodel.FxRate;
 import utils.ApplicationProperties;
+import utils.Database;
 import utils.GeneralUtils;
 
 public class FXCalculator {
@@ -32,10 +33,19 @@ public class FXCalculator {
 	private static int numberOfRecords = 0;
 	private static int printAfter = 0;
 	
+	private static String datasource;
 	private static String historicalDataPath;
 	private static String historicalDataFileExtension;
 	private static String historicalDataSeparator;
+
+	private static String databaseHost;
+	private static String databasePort;
+	private static String databaseName;
+	private static String databaseUser;
+	private static String databasePass;
+
 	
+	private static List<String> currencyPairs;
 	private static String startDate;
 	private static String endDate;
 	private static float increasePercentage;
@@ -62,77 +72,76 @@ public class FXCalculator {
 		// Load historical data
 		populateHistoricalFxData();
 		
-        executeCalculations ();
+		// Execute calculations
+		executeCalculations ();
         
-        /*
-        for (long i=0; i<ApplicationProperties.getIntProperty("test.numberOfRecords"); i++) {
-            list.add(new FxRate("id"+i, Math.random(), Math.random()));
-        }
-
-        out.println("List count: " + list.size());
-
-        long i=0;
-        for (FxRate fxRate1 : list) {
-            for (FxRate fxRate2 : list) {
-                if (i % ApplicationProperties.getIntProperty("test.printAfter") == 0) {
-                    out.println("Compared " + i);
-                }
-                if (fxRate1.getOpen() > fxRate2.getClose()) {
-                    results.put(fxRate1.getId(),fxRate1);
-                    //out.println("open > close");
-                }
-                i++;
-            }
-        }
-        */
-        
-        printParameters ("Finished");
+		// Print results
         printResults ();
-		logger.info("");
 		logger.info("Application finished");
     }
 
     
 	// Populates historical data and puts the objects into historical data list)
+    // Depending on the datasource parameter, data could be retrieved from database (mysql) or files
     // FX Historical Data format: conversionDate,conversionTime,open,high,low,close
-    public static int populateHistoricalFxData () {
+    public static long populateHistoricalFxData () {
     	
+    	logger.info("Data source set to: " + datasource);
+
     	histDataLoadStartTime = System.currentTimeMillis();
-    	
-    	historicalDataList = new ArrayList<FxRate>();
-    	int totalCounter=0;
-    	
-    	logger.info("Populating historical data from file (ext. " + historicalDataFileExtension + ") from "+ historicalDataPath);
-    	
-    	List<String> dataFiles = GeneralUtils.getFilesFromPath(historicalDataPath,historicalDataFileExtension);
-    	
-    	for(String dataFile : dataFiles){
-    		int fileCounter=0;
+    	historicalDataList = null;
+
+    	int totalCounter = 0;
+
+    	if ("database".equals(datasource)) {
+    		// Populate historical data from mysql database
     		
-        	logger.info ("Populating historical FX data from " + dataFile + "...");
+    		historicalDataList = Database.getHistoricalRates(currencyPairs, startDate, endDate, databaseHost, databasePort, databaseName, databaseUser, databasePass );
+    		
+    		
+    	} else {
+    		// Populate historical data from files
+    		
+    		String currentCurrency = null;
+    		
+        	logger.info("Populating historical data from file (ext. " + historicalDataFileExtension + ") from "+ historicalDataPath);
+        	logger.info("Looking for " + currencyPairs.toString() + " files");
         	
-        	try {
-        		CSVReader reader = new CSVReader(new FileReader(historicalDataPath + dataFile));
-    	        String [] nextLine;
-    	        while ((nextLine = reader.readNext()) != null) {
-    	        	
-    	        	FxRate fxRate = new FxRate (dataFile.substring(0,dataFile.indexOf(".")),nextLine,fileCounter);
-    	        	historicalDataList.add(fxRate);
-    				if (fileCounter%1000 == 0) {
-    		        	logger.debug ("  " + dataFile + " -> loaded " + fileCounter + " records so far");
-    				}
-    				fileCounter++;
-    				totalCounter++;
-    	        }
-    	        logger.info ("  " + dataFile + " -> total records loaded " + fileCounter);
-    	        reader.close();
-    	        
-    	    	histDataLoadStopTime = System.currentTimeMillis();
-    	    	
-        	} catch (Exception ex) {
-        		logger.error ("Exception in file " + dataFile + " - line " + fileCounter + " - " + ex.getClass() + " - " + ex.getMessage());
+        	List<String> dataFiles = GeneralUtils.getFilesFromPath(historicalDataPath,historicalDataFileExtension);
+        	
+        	for(String dataFile : dataFiles){
+        		
+        		currentCurrency = dataFile.substring(0,dataFile.indexOf("."));
+        		
+        		if (currencyPairs.contains(currentCurrency)) {
+                	logger.info ("Populating historical FX data from " + dataFile + "...");
+                	
+                	try {
+                		CSVReader reader = new CSVReader(new FileReader(historicalDataPath + dataFile));
+            	        String [] nextLine;
+            	        while ((nextLine = reader.readNext()) != null) {
+            	        	
+            	        	FxRate fxRate = new FxRate (currentCurrency,nextLine,totalCounter);
+            	        	historicalDataList.add(fxRate);
+            				if (totalCounter%1000 == 0) {
+            		        	logger.debug ("  " + dataFile + " -> loaded " + totalCounter + " records so far");
+            				}
+            				totalCounter++;
+            	        }
+            	        logger.info ("  " + dataFile + " -> total records loaded " + totalCounter);
+            	        reader.close();
+            	    	
+                	} catch (Exception ex) {
+                		logger.error ("Exception in file " + dataFile + " - line " + totalCounter + " - " + ex.getClass() + " - " + ex.getMessage());
+                	}
+        		} else {
+        			logger.info ("Data File " + dataFile + " not found in the list of in-scope currencies");
+        		}
+        		
         	}
     	}
+
+    	histDataLoadStopTime = System.currentTimeMillis();
     	logger.info ("Populating historical data finished");
     	return totalCounter;
     }
@@ -140,6 +149,7 @@ public class FXCalculator {
     private static void executeCalculations () {
 		try { 
 
+			logger.debug ("Start calculations ");
 			calculationStartTime = System.currentTimeMillis();
 
 			float increase = 1+(increasePercentage/100);
@@ -197,6 +207,7 @@ public class FXCalculator {
 			}
 			
 			calculationStopTime = System.currentTimeMillis();
+			logger.debug ("Finished calculations [" + totalCalculations + "]");
 			
 		} catch (Exception e) { 
 			e.printStackTrace(); 
@@ -205,16 +216,25 @@ public class FXCalculator {
     
     private static void loadProperties () {
 
-		numberOfRecords = ApplicationProperties.getIntProperty("test.numberOfRecords");
-		printAfter = ApplicationProperties.getIntProperty("test.printAfter");
+		datasource = ApplicationProperties.getStringProperty("main.datasource");
+		databaseHost = ApplicationProperties.getStringProperty("database.host");
+		databasePort = ApplicationProperties.getStringProperty("database.port");
+		databaseName = ApplicationProperties.getStringProperty("database.db_name");  
+		databaseUser = ApplicationProperties.getStringProperty("database.username");  
+		databasePass = ApplicationProperties.getStringProperty("database.password");  
+		
 		historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
 		historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
 		historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
+		
+		currencyPairs = ApplicationProperties.getListProperty("execution.currencyPairs");
 		startDate = ApplicationProperties.getStringProperty("execution.startDate");
 		endDate = ApplicationProperties.getStringProperty("execution.endDate");
 		increasePercentage = ApplicationProperties.getFloatProperty("execution.increasePercentage");
 		decreasePercentage = ApplicationProperties.getFloatProperty("execution.decreasePercentage");
 		maxLevels = ApplicationProperties.getIntProperty("execution.maxLevels");
+		numberOfRecords = ApplicationProperties.getIntProperty("test.numberOfRecords");
+		printAfter = ApplicationProperties.getIntProperty("test.printAfter");
 
     }
     
@@ -224,16 +244,25 @@ public class FXCalculator {
 		logger.info ("****************************************************"); 
 		logger.info (title + " FXCalculator with the following parameters:"); 
 		logger.info ("****************************************************"); 
+		logger.info ("  - datasource               : " + datasource);
 		logger.info ("  - hist. data path          : " + historicalDataPath);
 		logger.info ("  - hist. data extension     : " + historicalDataFileExtension);
 		logger.info ("  - hist. data separator     : " + historicalDataSeparator);
 
+		logger.info ("  - database host            : " + databaseHost);
+		logger.info ("  - database port            : " + databasePort);
+		logger.info ("  - database name            : " + databaseName);
+		logger.info ("  - database username        : " + databaseUser);
+		logger.info ("  - database password        : " + databasePass);
+
+		logger.info ("  - currency pairs           : " + currencyPairs.toString());
 		logger.info ("  - increase percentage      : " + increasePercentage);
 		logger.info ("  - decrease percentage      : " + decreasePercentage);
 		logger.info ("  - max. levels              : " + maxLevels);
 		logger.info ("  - number of records [test] : " + numberOfRecords); 
 		logger.info ("  - print after [test]       : " + printAfter);
 		logger.info ("****************************************************");
+		logger.info ("");
 	}
 
 	// Print execution times
@@ -279,6 +308,7 @@ public class FXCalculator {
 		logger.info ("");
 		logger.info ("Result Map:");
 		logger.info(resultsMap.toString());
+		logger.info ("");
 	}
 	
 }

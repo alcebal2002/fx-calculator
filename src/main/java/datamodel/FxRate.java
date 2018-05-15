@@ -23,16 +23,16 @@ public class FxRate implements Serializable {
 	 * @param low
 	 * @param close
 	 */
-	public FxRate(final int positionId, final String currencyPair, final String conversionDate, final String conversionTime, final String open, final String high, final String low, final String close) 
+	public FxRate(final int positionId, final String currencyPair, final String conversionDate, final String conversionTime, final float open, final float high, final float low, final float close) 
 		throws NumberFormatException {
 		this.currencyPair = currencyPair;
 		this.positionId = positionId;
 		this.conversionDate = conversionDate;
 		this.conversionTime = conversionTime;
-		this.open = Float.parseFloat(open);
-		this.high = Float.parseFloat(high);
-		this.low = Float.parseFloat(low);
-		this.close = Float.parseFloat(close);
+		this.open = open;
+		this.high = high;
+		this.low = low;
+		this.close = close;
 	}
 	
 	public FxRate(final String currencyPair, final String[] line, final int positionId)

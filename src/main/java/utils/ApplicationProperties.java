@@ -3,6 +3,8 @@ package utils;
 import static java.lang.System.out;
 
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 public class ApplicationProperties {
@@ -14,6 +16,12 @@ public class ApplicationProperties {
     	return propertiesFile;
     }
     
+    public static List<String> getListProperty (final String propertyName) {
+        String values = getStringProperty (propertyName);
+    	
+    	return Arrays.asList(values);
+    }
+
     public static String getStringProperty (final String propertyName) {
         return getProperty(propertyName);
     }
