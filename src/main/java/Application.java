@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import com.opencsv.CSVReader;
 
+import datamodel.CalcResult;
 import datamodel.FxRate;
 import utils.ApplicationProperties;
 import utils.Database;
@@ -57,10 +58,8 @@ public class Application {
 	
 	// Lists and Maps
 	private static Map<String,List<FxRate>> historicalDataMap;
-	private static Map<String,Integer> resultsMap = new HashMap<String,Integer>();
+	private static Map<String,CalcResult> calcResultsMap = new HashMap<String,CalcResult>();
 	
-	private static long totalCalculations = 0;
-
     public static void main (String args[]) {
 
 		logger.info("Application started");
@@ -107,7 +106,7 @@ public class Application {
     			
     			while (iter.hasNext()) {
     	            Entry<String, List<FxRate>> entry = iter.next();
-    	            logger.info ("  " + entry.getKey() + " -> total records loaded " + (entry.getValue()).size());
+    	            logger.info ("   " + entry.getKey() + " -> total records loaded " + (entry.getValue()).size());
     	        }
     		}
     	} else {
@@ -175,7 +174,7 @@ public class Application {
 			
 			for (String currentCurrency : currencyPairs) {
 
-				Runnable process = new WorkerRunnable(historicalDataMap, currentCurrency, resultsMap, increase, decrease, maxLevels, totalCalculations, latch);
+				Runnable process = new WorkerRunnable(historicalDataMap, currentCurrency, calcResultsMap, increase, decrease, maxLevels, latch);
 				new Thread(process).start();
 
 				/*
@@ -305,7 +304,7 @@ public class Application {
 	private static void printResults () {
 		logger.info ("");
 		logger.info ("Historical Data Load:");
-		logger.info ("**************************************************"); 
+		logger.info ("**************************************************");
 		logger.info ("  - Start time  : " + new Timestamp(histDataLoadStartTime)); 
 		logger.info ("  - Stop time   : " + new Timestamp(histDataLoadStopTime)); 
 
@@ -349,14 +348,39 @@ public class Application {
 	        }
 		}
 
+		long totalCalculations = 0;
+		long totalResults = 0;
+
+		if (calcResultsMap != null && calcResultsMap.size() > 0) {
+			Iterator<Entry<String, CalcResult>> iter = calcResultsMap.entrySet().iterator();
+			
+			while (iter.hasNext()) {
+	            Entry<String, CalcResult> entry = iter.next();
+	            totalCalculations += ((CalcResult)entry.getValue()).getTotalCalculations();
+	            totalResults += ((CalcResult)entry.getValue()).getLevelResults().size();
+	        }
+		}
+		logger.info ("");
+		logger.info ("Total figures:");
+		logger.info ("**************************************************");
 		logger.info ("  - Total historical data : " + totalHistoricalData); 
 		logger.info ("  - Total calculations    : " + totalCalculations); 
-		logger.info ("  - Total restuls         : " + resultsMap.size());
+		logger.info ("  - Total results         : " + totalResults);
 		logger.info ("**************************************************"); 
 		logger.info ("");
-		logger.info ("Result Map:");
-		logger.info(resultsMap.toString());
+		logger.info ("Results:");
+		logger.info ("**************************************************");
+
+		if (calcResultsMap != null && calcResultsMap.size() > 0) {
+			Iterator<Entry<String, CalcResult>> iter = calcResultsMap.entrySet().iterator();
+			
+			while (iter.hasNext()) {
+	            Entry<String, CalcResult> entry = iter.next();
+	            logger.info(entry.getKey() + " -> " + ((CalcResult)entry.getValue()).getLevelResults().toString());
+	        }
+		}
+		logger.info ("**************************************************");
 		logger.info ("");
-	}
+}
 	
 }

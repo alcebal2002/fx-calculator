@@ -6,6 +6,7 @@ import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import datamodel.CalcResult;
 import datamodel.FxRate;
 
 public class WorkerRunnable implements Runnable {
@@ -15,8 +16,9 @@ public class WorkerRunnable implements Runnable {
 
 	private Map<String, List<FxRate>> historicalDataMap;
 	private Map<String, Integer> resultsMap = new HashMap<String, Integer>();
+	private Map<String, CalcResult> calcResultsMap;
+
 	private String currentCurrency;
-	
 	private float increase;
 	private float decrease;
 	private long calculationStartTime;	
@@ -25,14 +27,13 @@ public class WorkerRunnable implements Runnable {
 	private long totalCalculations;
 	private CountDownLatch latch;
 	
-	public WorkerRunnable (final Map<String,List<FxRate>> historicalDataMap, final String currentCurrency, Map<String, Integer> resultsMap, final float increase, final float decrease, final int maxLevels, long totalCalculations, CountDownLatch latch){
+	public WorkerRunnable (final Map<String,List<FxRate>> historicalDataMap, final String currentCurrency, Map<String, CalcResult> calcResultsMap, final float increase, final float decrease, final int maxLevels, CountDownLatch latch){
 		this.historicalDataMap = historicalDataMap;
-		this.resultsMap = resultsMap;
 		this.currentCurrency = currentCurrency;
+		this.calcResultsMap = calcResultsMap;
 		this.increase = increase;
 		this.decrease = decrease;
 		this.maxLevels = maxLevels;
-		this.totalCalculations = totalCalculations;
 		this.latch = latch;
 	}
 	
@@ -67,31 +68,31 @@ public class WorkerRunnable implements Runnable {
 							logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
 							
 							if ((targetFxRate.getHigh() > opening * increase) && (indexUp <= maxLevels)) {
-								if (("down").equals(previousFound)) {
+								if (("DOWN").equals(previousFound)) {
 									break;
 								}
 								
-								if (resultsMap.containsKey(currencyPair+"-UP["+indexUp+"]")) {
-									resultsMap.put(currencyPair+"-UP["+indexUp+"]",resultsMap.get(currencyPair+"-UP["+indexUp+"]")+1);
+								if (resultsMap.containsKey("UP-"+indexUp)) {
+									resultsMap.put("UP-"+indexUp,resultsMap.get("UP-"+indexUp)+1);
 								} else {
-									resultsMap.put(currencyPair+"-UP["+indexUp+"]",1);
+									resultsMap.put("UP-"+indexUp,1);
 								}
 								
-								previousFound = "up";
+								previousFound = "UP";
 								opening = opening * increase;
 								indexUp++;
 							} else if ((targetFxRate.getLow() < opening * decrease) && (indexDown <= maxLevels)) {
-								if (("up").equals(previousFound)) {
+								if (("UP").equals(previousFound)) {
 									break;
 								}
 								
-								if (resultsMap.containsKey(currencyPair+"-DOWN["+indexDown+"]")) {
-									resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",resultsMap.get(currencyPair+"-DOWN["+indexDown+"]")+1);
+								if (resultsMap.containsKey("DOWN-"+indexDown)) {
+									resultsMap.put("DOWN-"+indexDown,resultsMap.get("DOWN-"+indexDown)+1);
 								} else {
-									resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",1);
+									resultsMap.put("DOWN-"+indexDown,1);
 								}
 			
-								previousFound = "down";
+								previousFound = "DOWN";
 								opening = opening * decrease;
 								indexDown++;			
 							}
@@ -99,9 +100,11 @@ public class WorkerRunnable implements Runnable {
 						}
 					}
 				}
+				
 			}
-			
 			calculationStopTime = System.currentTimeMillis();
+			calcResultsMap.put(currentCurrency, new CalcResult(currentCurrency, increase, decrease, calculationStartTime, calculationStopTime, maxLevels, totalCalculations, resultsMap));
+			
 			logger.info ("Finished calculations [" + totalCalculations + "] in " + (calculationStopTime - calculationStartTime) + " ms");
 			latch.countDown();
 			
