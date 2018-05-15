@@ -185,8 +185,8 @@ public class FXCalculator {
 						FxRate targetFxRate = null;
 						String previousFound = "";
 						
-						int countUp = 1;
-						int countDown = 1;
+						int indexUp = 1;
+						int indexDown = 1;
 	
 						for (int i=positionId+1; i<(historicalDataMap.get(currentCurrency)).size(); i++) {
 							targetFxRate = (historicalDataMap.get(currentCurrency)).get(i);
@@ -195,34 +195,34 @@ public class FXCalculator {
 							
 								logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
 								
-								if ((targetFxRate.getHigh() > opening * increase) && (countUp <= maxLevels)) {
+								if ((targetFxRate.getHigh() > opening * increase) && (indexUp <= maxLevels)) {
 									if (("down").equals(previousFound)) {
 										break;
 									}
 									
-									if (resultsMap.containsKey(currencyPair+"-UP["+countUp+"]")) {
-										resultsMap.put(currencyPair+"-UP["+countUp+"]",resultsMap.get(currencyPair+"-UP["+countUp+"]")+1);
+									if (resultsMap.containsKey(currencyPair+"-UP["+indexUp+"]")) {
+										resultsMap.put(currencyPair+"-UP["+indexUp+"]",resultsMap.get(currencyPair+"-UP["+indexUp+"]")+1);
 									} else {
-										resultsMap.put(currencyPair+"-UP["+countUp+"]",1);
+										resultsMap.put(currencyPair+"-UP["+indexUp+"]",1);
 									}
 									
 									previousFound = "up";
 									opening = opening * increase;
-									countUp++;
-								} else if ((targetFxRate.getLow() < opening * decrease) && (countDown <= maxLevels)) {
+									indexUp++;
+								} else if ((targetFxRate.getLow() < opening * decrease) && (indexDown <= maxLevels)) {
 									if (("up").equals(previousFound)) {
 										break;
 									}
 									
-									if (resultsMap.containsKey(currencyPair+"-DOWN["+countDown+"]")) {
-										resultsMap.put(currencyPair+"-DOWN["+countDown+"]",resultsMap.get(currencyPair+"-DOWN["+countDown+"]")+1);
+									if (resultsMap.containsKey(currencyPair+"-DOWN["+indexDown+"]")) {
+										resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",resultsMap.get(currencyPair+"-DOWN["+indexDown+"]")+1);
 									} else {
-										resultsMap.put(currencyPair+"-DOWN["+countDown+"]",1);
+										resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",1);
 									}
 				
 									previousFound = "down";
 									opening = opening * decrease;
-									countDown++;			
+									indexDown++;			
 								}
 								totalCalculations++;
 							}

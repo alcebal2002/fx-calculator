@@ -34,7 +34,6 @@ public class Database {
 				logger.info ("Connecting to database..." + DB_URL.replaceAll("<host>", databaseHost).replaceAll("<port>", databasePort).replaceAll("<name>", databaseName));
 				conn = DriverManager.getConnection(DB_URL.replaceAll("<host>", databaseHost).replaceAll("<port>", databasePort).replaceAll("<name>", databaseName),databaseUser,databasePass);
 			} catch (Exception ex) {
-				// TODO Auto-generated catch block
 				logger.error ("Exception: " + ex.getClass() + " - " + ex.getMessage());
 			}
 		}
