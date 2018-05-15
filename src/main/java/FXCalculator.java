@@ -4,8 +4,10 @@ import java.io.FileReader;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -53,7 +55,7 @@ public class FXCalculator {
 	private static int maxLevels;
 	
 	// Lists and Maps
-	private static List<FxRate> historicalDataList;
+	private static Map<String,List<FxRate>> historicalDataMap;
 	private static Map<String,Integer> resultsMap = new HashMap<String,Integer>();
 	
 	private static long totalCalculations = 0;
@@ -73,7 +75,9 @@ public class FXCalculator {
 		populateHistoricalFxData();
 		
 		// Execute calculations
-		executeCalculations ();
+		if (historicalDataMap != null && historicalDataMap.size() > 0) {
+			executeCalculations ();
+		}
         
 		// Print results
         printResults ();
@@ -84,23 +88,30 @@ public class FXCalculator {
 	// Populates historical data and puts the objects into historical data list)
     // Depending on the datasource parameter, data could be retrieved from database (mysql) or files
     // FX Historical Data format: conversionDate,conversionTime,open,high,low,close
-    public static long populateHistoricalFxData () {
+    public static void populateHistoricalFxData () {
     	
     	logger.info("Data source set to: " + datasource);
 
     	histDataLoadStartTime = System.currentTimeMillis();
-    	historicalDataList = null;
 
     	int totalCounter = 0;
 
     	if ("database".equals(datasource)) {
     		// Populate historical data from mysql database
     		
-    		historicalDataList = Database.getHistoricalRates(currencyPairs, startDate, endDate, databaseHost, databasePort, databaseName, databaseUser, databasePass );
+    		historicalDataMap = Database.getHistoricalRates(currencyPairs, startDate, endDate, databaseHost, databasePort, databaseName, databaseUser, databasePass );
     		
-    		
+    		if (historicalDataMap != null && historicalDataMap.size() > 0) {
+    			Iterator<Entry<String, List<FxRate>>> iter = historicalDataMap.entrySet().iterator();
+    			
+    			while (iter.hasNext()) {
+    	            Entry<String, List<FxRate>> entry = iter.next();
+    	            logger.info ("  " + entry.getKey() + " -> total records loaded " + (entry.getValue()).size());
+    	        }
+    		}
     	} else {
     		// Populate historical data from files
+    		historicalDataMap = new HashMap<String,List<FxRate>>();
     		
     		String currentCurrency = null;
     		
@@ -122,13 +133,18 @@ public class FXCalculator {
             	        while ((nextLine = reader.readNext()) != null) {
             	        	
             	        	FxRate fxRate = new FxRate (currentCurrency,nextLine,totalCounter);
-            	        	historicalDataList.add(fxRate);
-            				if (totalCounter%1000 == 0) {
+            	        	
+        					if (!historicalDataMap.containsKey(currentCurrency)) {
+        						historicalDataMap.put(currentCurrency, new ArrayList<FxRate>());							
+        					}
+        					(historicalDataMap.get(currentCurrency)).add(fxRate);
+
+        					if (totalCounter%printAfter == 0) {
             		        	logger.debug ("  " + dataFile + " -> loaded " + totalCounter + " records so far");
             				}
-            				totalCounter++;
+        					totalCounter++;
             	        }
-            	        logger.info ("  " + dataFile + " -> total records loaded " + totalCounter);
+            	        logger.info ("  " + dataFile + " -> total records loaded " + historicalDataMap.get(currentCurrency).size());
             	        reader.close();
             	    	
                 	} catch (Exception ex) {
@@ -143,7 +159,6 @@ public class FXCalculator {
 
     	histDataLoadStopTime = System.currentTimeMillis();
     	logger.info ("Populating historical data finished");
-    	return totalCounter;
     }
     
     private static void executeCalculations () {
@@ -155,54 +170,64 @@ public class FXCalculator {
 			float increase = 1+(increasePercentage/100);
 			float decrease = 1-(decreasePercentage/100);
 
-			for (FxRate originalFxRate : historicalDataList) {
+			for (String currentCurrency : currencyPairs) {
 				
-				int positionId = originalFxRate.getPositionId();
-				String currencyPair = originalFxRate.getCurrencyPair();
-				float opening = originalFxRate.getOpen();
+				if (historicalDataMap.containsKey(currentCurrency)) {
 				
-				logger.debug ("Processing " + currencyPair + "-" + positionId);
-				
-				FxRate targetFxRate = null;
-				String previousFound = "";
-				
-				int countUp = 1;
-				int countDown = 1;
-
-				for (int i=positionId+1; i<historicalDataList.size(); i++) {
-					targetFxRate = historicalDataList.get(i);
-					logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
-					
-					if ((targetFxRate.getHigh() > opening * increase) && (countUp <= maxLevels)) {
-						if (("down").equals(previousFound)) {
-							break;
-						}
+					for (FxRate originalFxRate : historicalDataMap.get(currentCurrency)) {
 						
-						if (resultsMap.containsKey(currencyPair+"-UP["+countUp+"]")) {
-							resultsMap.put(currencyPair+"-UP["+countUp+"]",resultsMap.get(currencyPair+"-UP["+countUp+"]")+1);
-						} else {
-							resultsMap.put(currencyPair+"-UP["+countUp+"]",1);
-						}
+						int positionId = originalFxRate.getPositionId();
+						String currencyPair = originalFxRate.getCurrencyPair();
+						float opening = originalFxRate.getOpen();
 						
-						previousFound = "up";
-						opening = opening * increase;
-						countUp++;
-					} else if ((targetFxRate.getLow() < opening * decrease) && (countDown <= maxLevels)) {
-						if (("up").equals(previousFound)) {
-							break;
-						}
+						logger.debug ("Processing " + currencyPair + "-" + positionId);
 						
-						if (resultsMap.containsKey(currencyPair+"-DOWN["+countDown+"]")) {
-							resultsMap.put(currencyPair+"-DOWN["+countDown+"]",resultsMap.get(currencyPair+"-DOWN["+countDown+"]")+1);
-						} else {
-							resultsMap.put(currencyPair+"-DOWN["+countDown+"]",1);
-						}
+						FxRate targetFxRate = null;
+						String previousFound = "";
+						
+						int countUp = 1;
+						int countDown = 1;
 	
-						previousFound = "down";
-						opening = opening * decrease;
-						countDown++;			
+						for (int i=positionId+1; i<(historicalDataMap.get(currentCurrency)).size(); i++) {
+							targetFxRate = (historicalDataMap.get(currentCurrency)).get(i);
+							
+							if (originalFxRate.getCurrencyPair().equals(targetFxRate.getCurrencyPair())) {
+							
+								logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
+								
+								if ((targetFxRate.getHigh() > opening * increase) && (countUp <= maxLevels)) {
+									if (("down").equals(previousFound)) {
+										break;
+									}
+									
+									if (resultsMap.containsKey(currencyPair+"-UP["+countUp+"]")) {
+										resultsMap.put(currencyPair+"-UP["+countUp+"]",resultsMap.get(currencyPair+"-UP["+countUp+"]")+1);
+									} else {
+										resultsMap.put(currencyPair+"-UP["+countUp+"]",1);
+									}
+									
+									previousFound = "up";
+									opening = opening * increase;
+									countUp++;
+								} else if ((targetFxRate.getLow() < opening * decrease) && (countDown <= maxLevels)) {
+									if (("up").equals(previousFound)) {
+										break;
+									}
+									
+									if (resultsMap.containsKey(currencyPair+"-DOWN["+countDown+"]")) {
+										resultsMap.put(currencyPair+"-DOWN["+countDown+"]",resultsMap.get(currencyPair+"-DOWN["+countDown+"]")+1);
+									} else {
+										resultsMap.put(currencyPair+"-DOWN["+countDown+"]",1);
+									}
+				
+									previousFound = "down";
+									opening = opening * decrease;
+									countDown++;			
+								}
+								totalCalculations++;
+							}
+						}
 					}
-					totalCalculations++;
 				}
 			}
 			
@@ -300,8 +325,20 @@ public class FXCalculator {
 		seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
 
 		logger.info ("  - Elapsed time: " + (calculationStopTime - calculationStartTime) + " ms - (" + hours + " hrs " + minutes + " min " + seconds + " secs)"); 
-		logger.info ("**************************************************"); 
-		logger.info ("  - Total historical data : " + historicalDataList.size()); 
+		logger.info ("**************************************************");
+		
+		long totalHistoricalData = 0;
+
+		if (historicalDataMap != null && historicalDataMap.size() > 0) {
+			Iterator<Entry<String, List<FxRate>>> iter = historicalDataMap.entrySet().iterator();
+			
+			while (iter.hasNext()) {
+	            Entry<String, List<FxRate>> entry = iter.next();
+	            totalHistoricalData += ((List<FxRate>)entry.getValue()).size();
+	        }
+		}
+
+		logger.info ("  - Total historical data : " + totalHistoricalData); 
 		logger.info ("  - Total calculations    : " + totalCalculations); 
 		logger.info ("  - Total restuls         : " + resultsMap.size());
 		logger.info ("**************************************************"); 

@@ -6,7 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,12 +41,13 @@ public class Database {
 		return conn;
 	}
 
-	public static List<FxRate> getHistoricalRates (final List<String> currencyPairs, final String startDate, final String endDate, 
+	public static Map<String,List<FxRate>> getHistoricalRates (final List<String> currencyPairs, final String startDate, final String endDate, 
 			                                       final String databaseHost, final String databasePort, final String databaseName, 
 			                                       final String databaseUser, final String databasePass) {
  
 		Statement stmt = null;
-		List<FxRate> resultList = new ArrayList<FxRate>();
+		//List<FxRate> resultList = new ArrayList<FxRate>();
+		Map<String,List<FxRate>> resultMap = new HashMap<String,List<FxRate>>();
 		
 		try {
 			logger.info ("Retrieving historical rates from database");
@@ -52,21 +55,19 @@ public class Database {
 			
 			String sql = null;
 			ResultSet rs = null;
-			
+
 			for (String currentCurrency : currencyPairs) {
 				
-				//sql = "SELECT * FROM historico_" + currentCurrency + " WHERE fecha >= '" + startDate + "' AND fecha <= '" + endDate + "' ORDER BY fecha ASC, hora ASC";
-				sql = "SELECT * FROM historico_" + currentCurrency + " ORDER BY fecha ASC, hora ASC";
+				sql = "SELECT * FROM historico_" + currentCurrency + " WHERE fecha >= STR_TO_DATE('" + startDate + "','%Y-%m-%d') AND fecha <= STR_TO_DATE('" + endDate + "','%Y-%m-%d') ORDER BY fecha ASC, hora ASC";
 				
 				logger.info("Query: " + sql);
 				
 				rs = stmt.executeQuery(sql);
-				
+
 				int positionId = 0;
 				
 				while(rs.next()) {
 					//Retrieve by column name
-					positionId++;
 					String conversionDate = rs.getString("fecha");
 					String conversionTime = rs.getString("hora");
 					float open = rs.getFloat("apertura");
@@ -74,14 +75,18 @@ public class Database {
 					float low = rs.getFloat("bajo");
 					float close = rs.getFloat("cerrar");
 					
-					resultList.add(new FxRate(positionId, currentCurrency, conversionDate, conversionTime, open, high, low, close));
-					
+					if (!resultMap.containsKey(currentCurrency)) {
+						resultMap.put(currentCurrency, new ArrayList<FxRate>());
+					}
+					(resultMap.get(currentCurrency)).add(new FxRate(positionId, currentCurrency, conversionDate, conversionTime, open, high, low, close));
+					positionId++;
 				}
-				rs.close();
-				stmt.close();
+				logger.debug("resultMap[" + currentCurrency + "]: " + resultMap.get(currentCurrency).size());
 			}
 	
 			//Clean-up environment
+			rs.close();
+			stmt.close();
 			conn.close();
 		} catch(Exception e) {
 			//Handle errors for Class.forName
@@ -103,6 +108,6 @@ public class Database {
 				logger.error ("Exception: " + e.getClass() + " - " + e.getMessage());
 			}
 		}
-		return resultList;
+		return resultMap;
 	}
 }

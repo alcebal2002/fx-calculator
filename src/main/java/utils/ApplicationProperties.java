@@ -19,7 +19,7 @@ public class ApplicationProperties {
     public static List<String> getListProperty (final String propertyName) {
         String values = getStringProperty (propertyName);
     	
-    	return Arrays.asList(values);
+    	return Arrays.asList(values.split("\\s*,\\s*"));
     }
 
     public static String getStringProperty (final String propertyName) {
