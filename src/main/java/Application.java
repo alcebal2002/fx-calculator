@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -20,10 +21,10 @@ import utils.ApplicationProperties;
 import utils.Database;
 import utils.GeneralUtils;
 
-public class FXCalculator {
+public class Application {
 
 	// Logger
-	private static Logger logger = LoggerFactory.getLogger(FXCalculator.class);
+	private static Logger logger = LoggerFactory.getLogger(Application.class);
 
 	// Execution times
 	private static long histDataLoadStartTime;
@@ -170,69 +171,77 @@ public class FXCalculator {
 			float increase = 1+(increasePercentage/100);
 			float decrease = 1-(decreasePercentage/100);
 
+			CountDownLatch latch = new CountDownLatch(currencyPairs.size());
+			
 			for (String currentCurrency : currencyPairs) {
-				
-				if (historicalDataMap.containsKey(currentCurrency)) {
-				
-					for (FxRate originalFxRate : historicalDataMap.get(currentCurrency)) {
+
+				Runnable process = new WorkerRunnable(historicalDataMap, currentCurrency, resultsMap, increase, decrease, maxLevels, totalCalculations, latch);
+				new Thread(process).start();
+
+				/*
+			
+				for (FxRate originalFxRate : historicalDataMap.get(currentCurrency)) {
+					
+					int positionId = originalFxRate.getPositionId();
+					String currencyPair = originalFxRate.getCurrencyPair();
+					float opening = originalFxRate.getOpen();
+					
+					logger.debug ("Processing " + currencyPair + "-" + positionId);
+					
+					FxRate targetFxRate = null;
+					String previousFound = "";
+					
+					int indexUp = 1;
+					int indexDown = 1;
+
+					for (int i=positionId+1; i<(historicalDataMap.get(currentCurrency)).size(); i++) {
+						targetFxRate = (historicalDataMap.get(currentCurrency)).get(i);
 						
-						int positionId = originalFxRate.getPositionId();
-						String currencyPair = originalFxRate.getCurrencyPair();
-						float opening = originalFxRate.getOpen();
+						if (originalFxRate.getCurrencyPair().equals(targetFxRate.getCurrencyPair())) {
 						
-						logger.debug ("Processing " + currencyPair + "-" + positionId);
-						
-						FxRate targetFxRate = null;
-						String previousFound = "";
-						
-						int indexUp = 1;
-						int indexDown = 1;
-	
-						for (int i=positionId+1; i<(historicalDataMap.get(currentCurrency)).size(); i++) {
-							targetFxRate = (historicalDataMap.get(currentCurrency)).get(i);
+							logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
 							
-							if (originalFxRate.getCurrencyPair().equals(targetFxRate.getCurrencyPair())) {
-							
-								logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
-								
-								if ((targetFxRate.getHigh() > opening * increase) && (indexUp <= maxLevels)) {
-									if (("down").equals(previousFound)) {
-										break;
-									}
-									
-									if (resultsMap.containsKey(currencyPair+"-UP["+indexUp+"]")) {
-										resultsMap.put(currencyPair+"-UP["+indexUp+"]",resultsMap.get(currencyPair+"-UP["+indexUp+"]")+1);
-									} else {
-										resultsMap.put(currencyPair+"-UP["+indexUp+"]",1);
-									}
-									
-									previousFound = "up";
-									opening = opening * increase;
-									indexUp++;
-								} else if ((targetFxRate.getLow() < opening * decrease) && (indexDown <= maxLevels)) {
-									if (("up").equals(previousFound)) {
-										break;
-									}
-									
-									if (resultsMap.containsKey(currencyPair+"-DOWN["+indexDown+"]")) {
-										resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",resultsMap.get(currencyPair+"-DOWN["+indexDown+"]")+1);
-									} else {
-										resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",1);
-									}
-				
-									previousFound = "down";
-									opening = opening * decrease;
-									indexDown++;			
+							if ((targetFxRate.getHigh() > opening * increase) && (indexUp <= maxLevels)) {
+								if (("down").equals(previousFound)) {
+									break;
 								}
-								totalCalculations++;
+								
+								if (resultsMap.containsKey(currencyPair+"-UP["+indexUp+"]")) {
+									resultsMap.put(currencyPair+"-UP["+indexUp+"]",resultsMap.get(currencyPair+"-UP["+indexUp+"]")+1);
+								} else {
+									resultsMap.put(currencyPair+"-UP["+indexUp+"]",1);
+								}
+								
+								previousFound = "up";
+								opening = opening * increase;
+								indexUp++;
+							} else if ((targetFxRate.getLow() < opening * decrease) && (indexDown <= maxLevels)) {
+								if (("up").equals(previousFound)) {
+									break;
+								}
+								
+								if (resultsMap.containsKey(currencyPair+"-DOWN["+indexDown+"]")) {
+									resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",resultsMap.get(currencyPair+"-DOWN["+indexDown+"]")+1);
+								} else {
+									resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",1);
+								}
+			
+								previousFound = "down";
+								opening = opening * decrease;
+								indexDown++;			
 							}
+							totalCalculations++;
 						}
 					}
 				}
+				*/
 			}
+			logger.info("Waiting for all the Workers to finish");
+			latch.await();
+			logger.info("All workers finished");
 			
 			calculationStopTime = System.currentTimeMillis();
-			logger.debug ("Finished calculations [" + totalCalculations + "]");
+			//logger.debug ("Finished calculations [" + totalCalculations + "]");
 			
 		} catch (Exception e) { 
 			e.printStackTrace(); 
