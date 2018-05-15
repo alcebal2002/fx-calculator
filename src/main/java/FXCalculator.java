@@ -281,6 +281,8 @@ public class FXCalculator {
 		logger.info ("  - database password        : " + databasePass);
 
 		logger.info ("  - currency pairs           : " + currencyPairs.toString());
+		logger.info ("  - start date               : " + startDate);
+		logger.info ("  - end date                 : " + endDate);
 		logger.info ("  - increase percentage      : " + increasePercentage);
 		logger.info ("  - decrease percentage      : " + decreasePercentage);
 		logger.info ("  - max. levels              : " + maxLevels);

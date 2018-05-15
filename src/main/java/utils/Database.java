@@ -19,7 +19,7 @@ public class Database {
 	
 	// JDBC driver name and database URL
 	static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-	static String DB_URL = "jdbc:mysql://<host>/<name>";
+	static String DB_URL = "jdbc:mysql://<host>:<port>/<name>";
 	
 	static Connection conn = null;
 	 
@@ -31,8 +31,8 @@ public class Database {
 		if (conn == null) {
 			try {
 				Class.forName("com.mysql.jdbc.Driver");
-				logger.info ("Connecting to database...");
-				conn = DriverManager.getConnection(DB_URL.replaceAll("<host>", databaseHost).replaceAll("<name>", databaseName),databaseUser,databasePass);
+				logger.info ("Connecting to database..." + DB_URL.replaceAll("<host>", databaseHost).replaceAll("<port>", databasePort).replaceAll("<name>", databaseName));
+				conn = DriverManager.getConnection(DB_URL.replaceAll("<host>", databaseHost).replaceAll("<port>", databasePort).replaceAll("<name>", databaseName),databaseUser,databasePass);
 			} catch (Exception ex) {
 				// TODO Auto-generated catch block
 				logger.error ("Exception: " + ex.getClass() + " - " + ex.getMessage());
