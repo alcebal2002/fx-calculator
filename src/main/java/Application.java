@@ -21,6 +21,8 @@ import executionservices.SystemMonitorThread;
 import executionservices.SystemThreadPoolExecutor;
 import utils.ApplicationProperties;
 import utils.DatabaseConnection;
+import utils.DatabaseUtils;
+import utils.GeneralUtils;
 
 public class Application {
 
@@ -119,6 +121,8 @@ public class Application {
 	
 			CountDownLatch latch = new CountDownLatch(currencyPairs.size());
 			
+			List<String> existingCurrencies = DatabaseUtils.getExistingCurrencies();
+					
 			for (String currentCurrency : currencyPairs) {
 				
 			/*		
@@ -126,7 +130,12 @@ public class Application {
 						(blockingQueue.size() < queueCapacity)) { // For LinkedBlockingQueue 
 			 */			
 
-				executorPool.execute(new RunnableWorkerThread(datasource, currentCurrency, calcResultsMap, latch));
+				if (existingCurrencies.indexOf(currentCurrency.toUpperCase()) != -1) {				
+					executorPool.execute(new RunnableWorkerThread(datasource, currentCurrency, calcResultsMap, latch));
+				} else {
+					latch.countDown();
+					logger.info(currentCurrency + " -> Table not present in database, ignoring...");
+				}
 			}
 
 			// Start the monitoring thread 
@@ -225,54 +234,8 @@ public class Application {
 
 	// Print execution times
 	private static void printResults () {
-		logger.info ("");
-		logger.info ("Historical Data Load:");
-		logger.info ("**************************************************");
-/*
-		logger.info ("  - Start time  : " + new Timestamp(histDataLoadStartTime)); 
-		logger.info ("  - Stop time   : " + new Timestamp(histDataLoadStopTime)); 
 
-		long millis = histDataLoadStopTime - histDataLoadStartTime;
-		long days = TimeUnit.MILLISECONDS.toDays(millis);
-		millis -= TimeUnit.DAYS.toMillis(days); 
-		long hours = TimeUnit.MILLISECONDS.toHours(millis);
-		millis -= TimeUnit.HOURS.toMillis(hours);
-		long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
-		millis -= TimeUnit.MINUTES.toMillis(minutes); 
-		long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
-
-		logger.info ("  - Elapsed time: " + (histDataLoadStopTime - histDataLoadStartTime) + " ms - (" + hours + " hrs " + minutes + " min " + seconds + " secs)"); 
-		logger.info ("**************************************************"); 
-		logger.info ("");
-		logger.info ("Calculations:");
-		logger.info ("**************************************************"); 
-		logger.info ("  - Start time  : " + new Timestamp(calculationStartTime)); 
-		logger.info ("  - Stop time   : " + new Timestamp(calculationStopTime)); 
-
-		millis = calculationStopTime - calculationStartTime;
-		days = TimeUnit.MILLISECONDS.toDays(millis);
-		millis -= TimeUnit.DAYS.toMillis(days); 
-		hours = TimeUnit.MILLISECONDS.toHours(millis);
-		millis -= TimeUnit.HOURS.toMillis(hours);
-		minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
-		millis -= TimeUnit.MINUTES.toMillis(minutes); 
-		seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
-
-		logger.info ("  - Elapsed time: " + (calculationStopTime - calculationStartTime) + " ms - (" + hours + " hrs " + minutes + " min " + seconds + " secs)"); 
-		logger.info ("**************************************************");
-		
 		long totalHistoricalData = 0;
-
-		if (historicalDataMap != null && historicalDataMap.size() > 0) {
-			Iterator<Entry<String, List<FxRate>>> iter = historicalDataMap.entrySet().iterator();
-			
-			while (iter.hasNext()) {
-	            Entry<String, List<FxRate>> entry = iter.next();
-	            totalHistoricalData += ((List<FxRate>)entry.getValue()).size();
-	        }
-		}
-*/
-
 		long totalCalculations = 0;
 		long totalResults = 0;
 
@@ -283,20 +246,23 @@ public class Application {
 	            Entry<String, CalcResult> entry = iter.next();
 	            totalCalculations += ((CalcResult)entry.getValue()).getTotalCalculations();
 	            totalResults += ((CalcResult)entry.getValue()).getLevelResults().size();
+	            totalHistoricalData += ((CalcResult)entry.getValue()).getTotalHistDataLoaded();
 	        }
 		}
 		logger.info ("");
 		logger.info ("Total figures:");
 		logger.info ("**************************************************");
-//		logger.info ("  - Total historical data : " + totalHistoricalData); 
-		logger.info ("  - Total calculations    : " + totalCalculations); 
-		logger.info ("  - Total results         : " + totalResults);
+		logger.info ("  - Total historical data : " + String.format("%,d", totalHistoricalData));
+		logger.info ("  - Total calculations    : " + String.format("%,d", totalCalculations)); 
+		logger.info ("  - Total results         : " + String.format("%,d", totalResults));
+		logger.info ("  - Elapsed time: " + GeneralUtils.printElapsedTime (applicationStartTime,applicationStopTime)); 
 		logger.info ("**************************************************"); 
 		logger.info ("");
 		logger.info ("Results:");
 		logger.info ("**************************************************");
 		logger.info ("Currency -> Level-[UP|DOWN]");
 		logger.info ("");
+		
 		if (calcResultsMap != null && calcResultsMap.size() > 0) {
 
 			for (String currency : currencyPairs) {

@@ -71,7 +71,7 @@ public class RunnableWorkerThread implements Runnable {
 			// Populates the Calculation Result Map
 			calcResultsMap.put(currentCurrency, new CalcResult(currentCurrency, increase, decrease, maxLevels, histDataStartTime, histDataStopTime, totalHistDataLoaded, calculationStartTime, calculationStopTime, totalCalculations, resultsMap));
 			
-			logger.info ("Finished calculations [" + totalCalculations + "] in " + (calculationStopTime - calculationStartTime) + " ms");
+			logger.info ("Finished calculations for " + currentCurrency + "[" + totalCalculations + "] in " + (calculationStopTime - calculationStartTime) + " ms");
 			latch.countDown();
 			
 			long stopTime = System.currentTimeMillis(); 
@@ -154,7 +154,7 @@ public class RunnableWorkerThread implements Runnable {
     	
     	long result = 0;
     	
-    	logger.info("Data source set to: " + datasource);
+    	logger.debug("Data source set to: " + datasource);
 
     	if ("database".equals(datasource)) {
     		// Populate historical data from mysql database
@@ -163,7 +163,7 @@ public class RunnableWorkerThread implements Runnable {
     		
     		if (historicalDataMap != null && historicalDataMap.size() > 0) {
     			// There should be only 1 record in the map corresponding to the currentCurrency
-   	            logger.info ("   " + currentCurrency + " -> total records loaded " + historicalDataMap.get(currentCurrency).size());
+   	            logger.info (currentCurrency + " -> total records loaded " + historicalDataMap.get(currentCurrency).size());
    	            result = historicalDataMap.get(currentCurrency).size();
     		}
     	} else {
@@ -223,7 +223,6 @@ public class RunnableWorkerThread implements Runnable {
     	}
     	*/
 
-    	logger.info ("Populating historical data finished");
     	return result;
     }
     

@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,5 +36,19 @@ public class GeneralUtils {
 			}
 		}
 		return filesList;
+	}
+	
+	public static String printElapsedTime (final long startTime, final long endTime) {
+		
+		long millis = endTime - startTime;
+		long days = TimeUnit.MILLISECONDS.toDays(millis);
+		millis -= TimeUnit.DAYS.toMillis(days); 
+		long hours = TimeUnit.MILLISECONDS.toHours(millis);
+		millis -= TimeUnit.HOURS.toMillis(hours);
+		long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
+		millis -= TimeUnit.MINUTES.toMillis(minutes); 
+		long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
+
+		return ((endTime - startTime) + " ms - (" + hours + " hrs " + minutes + " min " + seconds + " secs)"); 
 	}
 }
