@@ -1,37 +1,45 @@
 // /Library/Java/JavaVirtualMachines/jdk1.8.0_102.jdk/Contents/Home/jre/lib/rt.jar to be added to the classpath
 
-import java.io.FileReader;
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.opencsv.CSVReader;
-
 import datamodel.CalcResult;
-import datamodel.FxRate;
+import executionservices.RejectedExecutionHandlerImpl;
+import executionservices.RunnableWorkerThread;
+import executionservices.SystemLinkedBlockingQueue;
+import executionservices.SystemMonitorThread;
+import executionservices.SystemThreadPoolExecutor;
 import utils.ApplicationProperties;
-import utils.Database;
-import utils.GeneralUtils;
+import utils.DatabaseConnection;
 
 public class Application {
 
 	// Logger
 	private static Logger logger = LoggerFactory.getLogger(Application.class);
 
-	// Execution times
-	private static long histDataLoadStartTime;
-	private static long histDataLoadStopTime;
-	private static long calculationStartTime;	
-	private static long calculationStopTime;	
+	// WorkerPool parameters 
+	private static int poolCoreSize;
+	private static int poolMaxSize; 
+	private static int queueCapacity; 
+	private static int timeoutSecs; 
+	private static int retrySleepTime; 
+	private static int retryMaxAttempts; 
+	private static int initialSleep; 
+	private static int monitorSleep;
+
+	// Execution time
+	private static long applicationStartTime;	
+	private static long applicationStopTime;	
 	
 	// Application properties
 	private static int numberOfRecords = 0;
@@ -56,11 +64,15 @@ public class Application {
 	private static float decreasePercentage;
 	private static int maxLevels;
 	
+	private static final String applicationId = (""+System.currentTimeMillis());
+
+	
 	// Lists and Maps
-	private static Map<String,List<FxRate>> historicalDataMap;
 	private static Map<String,CalcResult> calcResultsMap = new HashMap<String,CalcResult>();
 	
     public static void main (String args[]) {
+
+    	applicationStartTime = System.currentTimeMillis();
 
 		logger.info("Application started");
 		logger.info("Loading application properties from " + ApplicationProperties.getPropertiesFile());
@@ -71,133 +83,88 @@ public class Application {
 		// Print parameters used
 		printParameters ("Start");
 		
-		// Load historical data
-		populateHistoricalFxData();
-		
-		// Execute calculations
-		if (historicalDataMap != null && historicalDataMap.size() > 0) {
-			executeCalculations ();
-		}
+		// Execute workers
+		executeWorkers ();
         
+		applicationStopTime = System.currentTimeMillis();
+
 		// Print results
         printResults ();
 		logger.info("Application finished");
+		// Exit application
+		System.exit(0);
     }
 
     
-	// Populates historical data and puts the objects into historical data list)
-    // Depending on the datasource parameter, data could be retrieved from database (mysql) or files
-    // FX Historical Data format: conversionDate,conversionTime,open,high,low,close
-    public static void populateHistoricalFxData () {
-    	
-    	logger.info("Data source set to: " + datasource);
+    private static void executeWorkers () {
 
-    	histDataLoadStartTime = System.currentTimeMillis();
+		// RejectedExecutionHandler implementation 
+		RejectedExecutionHandlerImpl rejectionHandler = new RejectedExecutionHandlerImpl(); 
+		
+		// Get the ThreadFactory implementation to use 
+		ThreadFactory threadFactory = Executors.defaultThreadFactory();
+		
+		/* Define the BlockingQueue. 
+		 * ArrayBlockingQueue to set a fixed capacity queue
+		 * LinkedBlockingQueue to set an unbound capacity queue
+		*/
+		SystemLinkedBlockingQueue<Runnable> blockingQueue = new SystemLinkedBlockingQueue<Runnable>();		
+		
+		// Create the ThreadPoolExecutor
+		SystemThreadPoolExecutor executorPool = new SystemThreadPoolExecutor(poolCoreSize, poolMaxSize, timeoutSecs, TimeUnit.SECONDS, blockingQueue, threadFactory, rejectionHandler); 
 
-    	int totalCounter = 0;
+    	try { 
 
-    	if ("database".equals(datasource)) {
-    		// Populate historical data from mysql database
-    		
-    		historicalDataMap = Database.getHistoricalRates(currencyPairs, startDate, endDate, databaseHost, databasePort, databaseName, databaseUser, databasePass );
-    		
-    		if (historicalDataMap != null && historicalDataMap.size() > 0) {
-    			Iterator<Entry<String, List<FxRate>>> iter = historicalDataMap.entrySet().iterator();
-    			
-    			while (iter.hasNext()) {
-    	            Entry<String, List<FxRate>> entry = iter.next();
-    	            logger.info ("   " + entry.getKey() + " -> total records loaded " + (entry.getValue()).size());
-    	        }
-    		}
-    	} else {
-    		// Populate historical data from files
-    		historicalDataMap = new HashMap<String,List<FxRate>>();
-    		
-    		String currentCurrency = null;
-    		
-        	logger.info("Populating historical data from file (ext. " + historicalDataFileExtension + ") from "+ historicalDataPath);
-        	logger.info("Looking for " + currencyPairs.toString() + " files");
-        	
-        	List<String> dataFiles = GeneralUtils.getFilesFromPath(historicalDataPath,historicalDataFileExtension);
-        	
-        	for(String dataFile : dataFiles){
-        		
-        		currentCurrency = dataFile.substring(0,dataFile.indexOf("."));
-        		
-        		if (currencyPairs.contains(currentCurrency)) {
-                	logger.info ("Populating historical FX data from " + dataFile + "...");
-                	
-                	try {
-                		CSVReader reader = new CSVReader(new FileReader(historicalDataPath + dataFile));
-            	        String [] nextLine;
-            	        while ((nextLine = reader.readNext()) != null) {
-            	        	
-            	        	FxRate fxRate = new FxRate (currentCurrency,nextLine,totalCounter);
-            	        	
-        					if (!historicalDataMap.containsKey(currentCurrency)) {
-        						historicalDataMap.put(currentCurrency, new ArrayList<FxRate>());							
-        					}
-        					(historicalDataMap.get(currentCurrency)).add(fxRate);
-
-        					if (totalCounter%printAfter == 0) {
-            		        	logger.debug ("  " + dataFile + " -> loaded " + totalCounter + " records so far");
-            				}
-        					totalCounter++;
-            	        }
-            	        logger.info ("  " + dataFile + " -> total records loaded " + historicalDataMap.get(currentCurrency).size());
-            	        reader.close();
-            	    	
-                	} catch (Exception ex) {
-                		logger.error ("Exception in file " + dataFile + " - line " + totalCounter + " - " + ex.getClass() + " - " + ex.getMessage());
-                	}
-        		} else {
-        			logger.info ("Data File " + dataFile + " not found in the list of in-scope currencies");
-        		}
-        		
-        	}
-    	}
-
-    	histDataLoadStopTime = System.currentTimeMillis();
-    	logger.info ("Populating historical data finished");
-    }
-    
-    private static void executeCalculations () {
-		try { 
-
-			logger.debug ("Start calculations ");
-			calculationStartTime = System.currentTimeMillis();
-
-			float increase = 1+(increasePercentage/100);
-			float decrease = 1-(decreasePercentage/100);
-
+			logger.info ("Starting workers");
+	
 			CountDownLatch latch = new CountDownLatch(currencyPairs.size());
 			
 			for (String currentCurrency : currencyPairs) {
+				
+			/*		
+				if ((executorPool.getActiveCount() < executorPool.getMaximumPoolSize()) ||
+						(blockingQueue.size() < queueCapacity)) { // For LinkedBlockingQueue 
+			 */			
 
-				Runnable process = new WorkerRunnable(historicalDataMap, currentCurrency, calcResultsMap, increase, decrease, maxLevels, latch);
-				new Thread(process).start();
+				executorPool.execute(new RunnableWorkerThread(datasource, currentCurrency, calcResultsMap, latch));
 			}
+
+			// Start the monitoring thread 
+			SystemMonitorThread monitor = new SystemMonitorThread(executorPool, monitorSleep, applicationId); 
+			Thread monitorThread = new Thread(monitor); 
+			monitorThread.start(); 
+
 			logger.info("Waiting for all the Workers to finish");
 			latch.await();
 			logger.info("All workers finished");
 			
-			calculationStopTime = System.currentTimeMillis();
-			//logger.debug ("Finished calculations [" + totalCalculations + "]");
+			logger.info ("Shutting down monitor thread..."); 
+			monitor.shutdown(); 
 			
 		} catch (Exception e) { 
 			e.printStackTrace(); 
-		} 
+		} finally {
+			DatabaseConnection.closeConnection();
+		}
 	} 
     
     private static void loadProperties () {
 
+		poolCoreSize = ApplicationProperties.getIntProperty("workerpool.coreSize");
+		poolMaxSize = ApplicationProperties.getIntProperty("workerpool.maxSize");
+		queueCapacity = ApplicationProperties.getIntProperty("workerpool.queueCapacity");
+		timeoutSecs = ApplicationProperties.getIntProperty("workerpool.timeoutSecs");
+		retrySleepTime = ApplicationProperties.getIntProperty("workerpool.retrySleepTime");
+		retryMaxAttempts = ApplicationProperties.getIntProperty("workerpool.retryMaxAttempts");
+		monitorSleep = ApplicationProperties.getIntProperty("workerpool.monitorSleep");
+
 		datasource = ApplicationProperties.getStringProperty("main.datasource");
 		databaseHost = ApplicationProperties.getStringProperty("database.host");
 		databasePort = ApplicationProperties.getStringProperty("database.port");
-		databaseName = ApplicationProperties.getStringProperty("database.db_name");  
-		databaseUser = ApplicationProperties.getStringProperty("database.username");  
-		databasePass = ApplicationProperties.getStringProperty("database.password");  
-		
+		databaseName = ApplicationProperties.getStringProperty("database.db_name");
+		databaseUser = ApplicationProperties.getStringProperty("database.username");
+		databasePass = ApplicationProperties.getStringProperty("database.password");
+
 		historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
 		historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
 		historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
@@ -215,6 +182,20 @@ public class Application {
     
 	// Print execution parameters 
 	private static void printParameters (final String title) {
+		logger.info ("");
+		logger.info ("**************************************************"); 
+		logger.info (title + " WorkerPool with the following parameters:"); 
+		logger.info ("**************************************************"); 
+		logger.info ("  - pool core size       : " + poolCoreSize); 
+		logger.info ("  - pool max size        : " + poolMaxSize); 
+		logger.info ("  - queue capacity       : " + queueCapacity); 
+		logger.info ("  - timeout (secs)       : " + timeoutSecs); 
+		logger.info ("  - retry sleep (ms)     : " + retrySleepTime); 
+		logger.info ("  - retry max attempts   : " + retryMaxAttempts);
+		logger.info ("  - initial sleep (secs) : " + initialSleep); 
+		logger.info ("  - monitor sleep (secs) : " + monitorSleep); 
+		logger.info ("**************************************************");
+
 		logger.info ("");
 		logger.info ("****************************************************"); 
 		logger.info (title + " FXCalculator with the following parameters:"); 
@@ -247,6 +228,7 @@ public class Application {
 		logger.info ("");
 		logger.info ("Historical Data Load:");
 		logger.info ("**************************************************");
+/*
 		logger.info ("  - Start time  : " + new Timestamp(histDataLoadStartTime)); 
 		logger.info ("  - Stop time   : " + new Timestamp(histDataLoadStopTime)); 
 
@@ -289,6 +271,7 @@ public class Application {
 	            totalHistoricalData += ((List<FxRate>)entry.getValue()).size();
 	        }
 		}
+*/
 
 		long totalCalculations = 0;
 		long totalResults = 0;
@@ -305,14 +288,15 @@ public class Application {
 		logger.info ("");
 		logger.info ("Total figures:");
 		logger.info ("**************************************************");
-		logger.info ("  - Total historical data : " + totalHistoricalData); 
+//		logger.info ("  - Total historical data : " + totalHistoricalData); 
 		logger.info ("  - Total calculations    : " + totalCalculations); 
 		logger.info ("  - Total results         : " + totalResults);
 		logger.info ("**************************************************"); 
 		logger.info ("");
 		logger.info ("Results:");
 		logger.info ("**************************************************");
-
+		logger.info ("Currency -> Level-[UP|DOWN]");
+		logger.info ("");
 		if (calcResultsMap != null && calcResultsMap.size() > 0) {
 
 			for (String currency : currencyPairs) {
