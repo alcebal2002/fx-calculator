@@ -314,15 +314,42 @@ public class Application {
 		logger.info ("**************************************************");
 
 		if (calcResultsMap != null && calcResultsMap.size() > 0) {
-			Iterator<Entry<String, CalcResult>> iter = calcResultsMap.entrySet().iterator();
-			
-			while (iter.hasNext()) {
-	            Entry<String, CalcResult> entry = iter.next();
-	            logger.info(entry.getKey() + " -> " + ((CalcResult)entry.getValue()).getLevelResults().toString());
-	        }
+
+			for (String currency : currencyPairs) {
+				
+				if (calcResultsMap.containsKey(currency)) {
+					printCurrencyLevels (currency, ((CalcResult)calcResultsMap.get(currency)).getLevelResults(), maxLevels);
+				} else {
+					printCurrencyLevels (currency, null, maxLevels);
+				}
+			}
 		}
 		logger.info ("**************************************************");
 		logger.info ("");
-}
+	}
 	
+	// Print currency result levels
+	private static void printCurrencyLevels (final String currency, final Map<String,Integer> levelsMap, final int maxLevels) {
+		
+		StringBuilder stringBuilder = new StringBuilder();
+		
+		for (int i=1; i <= maxLevels; i++) {
+			stringBuilder.append(i + "-[");
+			if (levelsMap != null && levelsMap.containsKey("UP-"+i)) {
+				stringBuilder.append(levelsMap.get("UP-"+i));
+			} else {
+				stringBuilder.append("0");
+			}
+			stringBuilder.append("|");
+			if (levelsMap != null && levelsMap.containsKey("DOWN-"+i)) {
+				stringBuilder.append(levelsMap.get("DOWN-"+i));
+			} else {
+				stringBuilder.append("0");
+			}
+			stringBuilder.append("] ");
+		}
+		
+		logger.info (currency + "-> " + stringBuilder.toString());
+	}
+
 }
