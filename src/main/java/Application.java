@@ -176,64 +176,6 @@ public class Application {
 
 				Runnable process = new WorkerRunnable(historicalDataMap, currentCurrency, calcResultsMap, increase, decrease, maxLevels, latch);
 				new Thread(process).start();
-
-				/*
-			
-				for (FxRate originalFxRate : historicalDataMap.get(currentCurrency)) {
-					
-					int positionId = originalFxRate.getPositionId();
-					String currencyPair = originalFxRate.getCurrencyPair();
-					float opening = originalFxRate.getOpen();
-					
-					logger.debug ("Processing " + currencyPair + "-" + positionId);
-					
-					FxRate targetFxRate = null;
-					String previousFound = "";
-					
-					int indexUp = 1;
-					int indexDown = 1;
-
-					for (int i=positionId+1; i<(historicalDataMap.get(currentCurrency)).size(); i++) {
-						targetFxRate = (historicalDataMap.get(currentCurrency)).get(i);
-						
-						if (originalFxRate.getCurrencyPair().equals(targetFxRate.getCurrencyPair())) {
-						
-							logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
-							
-							if ((targetFxRate.getHigh() > opening * increase) && (indexUp <= maxLevels)) {
-								if (("down").equals(previousFound)) {
-									break;
-								}
-								
-								if (resultsMap.containsKey(currencyPair+"-UP["+indexUp+"]")) {
-									resultsMap.put(currencyPair+"-UP["+indexUp+"]",resultsMap.get(currencyPair+"-UP["+indexUp+"]")+1);
-								} else {
-									resultsMap.put(currencyPair+"-UP["+indexUp+"]",1);
-								}
-								
-								previousFound = "up";
-								opening = opening * increase;
-								indexUp++;
-							} else if ((targetFxRate.getLow() < opening * decrease) && (indexDown <= maxLevels)) {
-								if (("up").equals(previousFound)) {
-									break;
-								}
-								
-								if (resultsMap.containsKey(currencyPair+"-DOWN["+indexDown+"]")) {
-									resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",resultsMap.get(currencyPair+"-DOWN["+indexDown+"]")+1);
-								} else {
-									resultsMap.put(currencyPair+"-DOWN["+indexDown+"]",1);
-								}
-			
-								previousFound = "down";
-								opening = opening * decrease;
-								indexDown++;			
-							}
-							totalCalculations++;
-						}
-					}
-				}
-				*/
 			}
 			logger.info("Waiting for all the Workers to finish");
 			latch.await();
