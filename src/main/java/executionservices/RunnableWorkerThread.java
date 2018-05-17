@@ -1,5 +1,7 @@
 package executionservices;
 
+import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,6 +9,8 @@ import java.util.concurrent.CountDownLatch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.opencsv.CSVReader;
 
 import datamodel.CalcResult;
 import datamodel.FxRate;
@@ -22,7 +26,7 @@ public class RunnableWorkerThread implements Runnable {
 	private String currentCurrency;
 	private CountDownLatch latch;
 
-	private Map<String, List<FxRate>> historicalDataMap;
+	private Map<String, List<FxRate>> historicalDataMap = new HashMap<String, List<FxRate>>();
 	private Map<String, Integer> resultsMap = new HashMap<String, Integer>();
 	private Map<String, CalcResult> calcResultsMap;
 	
@@ -164,65 +168,50 @@ public class RunnableWorkerThread implements Runnable {
     		if (historicalDataMap != null && historicalDataMap.size() > 0) {
     			// There should be only 1 record in the map corresponding to the currentCurrency
    	            logger.info (currentCurrency + " -> total records loaded " + historicalDataMap.get(currentCurrency).size());
-   	            result = historicalDataMap.get(currentCurrency).size();
     		}
     	} else {
-    		logger.info("ONLY database datasource allowed");
-    	}
-    	
-    	/*
-    	else {
+    		logger.info("ONLY database datasource allowed... for the moment");
+    		
+			String historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
+			String historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
+			String historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
+			int printAfter = ApplicationProperties.getIntProperty("test.printAfter");
+    		
    	    	int totalCounter = 0;
 
-    		// Populate historical data from files
-    		historicalDataMap = new HashMap<String,List<FxRate>>();
+    		String fileName = historicalDataPath + currentCurrency + historicalDataFileExtension;
     		
-    		String fileName = null;
-    		
-        	logger.info("Populating historical data from file (ext. " + historicalDataFileExtension + ") from "+ historicalDataPath);
-        	logger.info("Looking for " + currentCurrency + " file");
+        	logger.info("Populating historical data from file (" + fileName + "). Fields separated by " + historicalDataSeparator.charAt(0));
         	
-        	List<String> dataFiles = GeneralUtils.getFilesFromPath(historicalDataPath,historicalDataFileExtension);
-        	
-        	for(String dataFile : dataFiles){
-        		
-        		fileName = dataFile.substring(0,dataFile.indexOf("."));
-        		
-        		if (currentCurrency.equals(fileName)) {
-        		
-                	logger.info ("Populating historical FX data from " + dataFile + "...");
-                	
-                	try {
-                		CSVReader reader = new CSVReader(new FileReader(historicalDataPath + dataFile));
-            	        String [] nextLine;
-            	        while ((nextLine = reader.readNext()) != null) {
-            	        	
-            	        	FxRate fxRate = new FxRate (currentCurrency,nextLine,totalCounter);
-            	        	
-        					if (!historicalDataMap.containsKey(currentCurrency)) {
-        						historicalDataMap.put(currentCurrency, new ArrayList<FxRate>());							
-        					}
-        					(historicalDataMap.get(currentCurrency)).add(fxRate);
+        	try {
+        		CSVReader reader = new CSVReader(new FileReader(fileName), historicalDataSeparator.charAt(0));
+    	        String [] nextLine;
+    	        while ((nextLine = reader.readNext()) != null) {
+    	        	
+    	        	FxRate fxRate = new FxRate (currentCurrency,nextLine,totalCounter);
+    	        	
+					if (!historicalDataMap.containsKey(currentCurrency)) {
+						historicalDataMap.put(currentCurrency, new ArrayList<FxRate>());							
+					}
+					(historicalDataMap.get(currentCurrency)).add(fxRate);
 
-        					if (totalCounter%printAfter == 0) {
-            		        	logger.debug ("  " + dataFile + " -> loaded " + totalCounter + " records so far");
-            				}
-        					totalCounter++;
-            	        }
-            	        logger.info ("  " + dataFile + " -> total records loaded " + historicalDataMap.get(currentCurrency).size());
-            	        reader.close();
-            	    	
-                	} catch (Exception ex) {
-                		logger.error ("Exception in file " + dataFile + " - line " + totalCounter + " - " + ex.getClass() + " - " + ex.getMessage());
-                	}
-        		} else {
-        			logger.info ("Data File " + dataFile + " not found in the list of in-scope currencies");
-        		}
-        		
+					if (totalCounter%printAfter == 0) {
+    		        	logger.debug ("  " + currentCurrency + " -> loaded " + totalCounter + " records so far");
+    				}
+					totalCounter++;
+    	        }
+    	        logger.info (currentCurrency + " -> total records loaded " + totalCounter);
+    	        reader.close();
+    	    	
+        	} catch (Exception ex) {
+        		logger.error ("Exception in file " + fileName + " - line " + totalCounter + " - " + ex.getClass() + " - " + ex.getMessage());
         	}
     	}
-    	*/
-
+    	
+    	if (historicalDataMap.containsKey(currentCurrency)) {
+    		result = historicalDataMap.get(currentCurrency).size();
+    	}
+    	
     	return result;
     }
     

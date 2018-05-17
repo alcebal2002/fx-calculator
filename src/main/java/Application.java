@@ -46,12 +46,12 @@ public class Application {
 	
 	// Application properties
 	private static int numberOfRecords = 0;
-	private static int printAfter = 0;
-	
-	private static String datasource;
 	private static String historicalDataPath;
 	private static String historicalDataFileExtension;
 	private static String historicalDataSeparator;
+	private static int printAfter = 0;
+	
+	private static String datasource;
 
 	private static String databaseHost;
 	private static String databasePort;
@@ -173,6 +173,12 @@ public class Application {
 		retrySleepTime = ApplicationProperties.getIntProperty("workerpool.retrySleepTime");
 		retryMaxAttempts = ApplicationProperties.getIntProperty("workerpool.retryMaxAttempts");
 		monitorSleep = ApplicationProperties.getIntProperty("workerpool.monitorSleep");
+		
+		historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
+		historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
+		historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
+		printAfter = ApplicationProperties.getIntProperty("test.printAfter");
+
 
 		datasource = ApplicationProperties.getStringProperty("main.datasource");
 		databaseHost = ApplicationProperties.getStringProperty("database.host");
@@ -181,10 +187,6 @@ public class Application {
 		databaseUser = ApplicationProperties.getStringProperty("database.username");
 		databasePass = ApplicationProperties.getStringProperty("database.password");
 
-		historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
-		historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
-		historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
-		
 		currencyPairs = ApplicationProperties.getListProperty("execution.currencyPairs");
 		startDate = ApplicationProperties.getStringProperty("execution.startDate");
 		endDate = ApplicationProperties.getStringProperty("execution.endDate");
