@@ -30,7 +30,7 @@ public class Application {
 	private static Logger logger = LoggerFactory.getLogger(Application.class);
 
 	// WorkerPool parameters 
-	private static int poolCoreSize;
+	private static int poolCoreSize;	
 	private static int poolMaxSize; 
 	private static int queueCapacity; 
 	private static int timeoutSecs; 

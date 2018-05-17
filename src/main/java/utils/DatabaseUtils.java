@@ -25,35 +25,9 @@ public class DatabaseUtils {
 		String sql = null;
 		ResultSet rs = null;
 
-//		List<String> existingCurrencies = new ArrayList<String>();
 		Map<String,List<FxRate>> resultMap = new HashMap<String,List<FxRate>>();
 		
 		try {
-			/*
-			logger.info ("Checking currencies loaded in database");
-			
-			stmt = DatabaseConnection.getInstance().getConnection().createStatement();
-			
-			sql = "SELECT UPPER(SUBSTRING(table_name, 11)) as 'currency' FROM information_schema.TABLES WHERE table_name like 'historico_%' and data_length > 0";
-			logger.info("Executing query: " + sql);
-			
-			try {
-			
-				rs = stmt.executeQuery(sql);
-
-				while(rs.next()) {
-					//Retrieve currency name
-					existingCurrencies.add(rs.getString("currency"));
-				}
-				rs.close();
-				
-			} catch(Exception e) {
-				//Handle errors for Class.forName
-				logger.error ("Exception while executing " + sql);
-				logger.error ("Exception: " + e.getClass() + " - " + e.getMessage());
-			}
-			*/
-			
 			try {
 
 				logger.info ("Retrieving historical rates from database for " + currentCurrency);
