@@ -1,5 +1,9 @@
 package datamodel;
 import java.io.Serializable;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class FxRate implements Serializable {
 
@@ -35,16 +39,19 @@ public class FxRate implements Serializable {
 		this.close = close;
 	}
 	
-	public FxRate(final String currencyPair, final String[] line, final int positionId)
-		throws NumberFormatException {
-		this.currencyPair = currencyPair;
-		this.positionId = positionId;
-		this.conversionDate = line[0];
-		this.conversionTime = line[1];
-		this.open = Float.parseFloat(line[2]);
-		this.high = Float.parseFloat(line[3]);
-		this.low = Float.parseFloat(line[4]);
-		this.close = Float.parseFloat(line[5]);
+	public FxRate(final String currencyPair, final String[] line, final int positionId, final String startDate, final String endDate)
+		throws Exception {
+		
+		if (checkFilter(line[0],startDate,endDate)) {
+			this.currencyPair = currencyPair;
+			this.positionId = positionId;
+			this.conversionDate = line[0];
+			this.conversionTime = line[1];
+			this.open = Float.parseFloat(line[2]);
+			this.high = Float.parseFloat(line[3]);
+			this.low = Float.parseFloat(line[4]);
+			this.close = Float.parseFloat(line[5]);
+		}
 	}
 
 	public final String getCurrencyPair() {
@@ -70,6 +77,22 @@ public class FxRate implements Serializable {
 	}
 	public final float getClose() {
 		return close;
+	}
+	
+	private final boolean checkFilter (final String rowDate, final String startDate, final String endDate) throws Exception {
+		boolean result = false;
+		
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		Date fileDate = format.parse(rowDate);
+		Date filterStartDate = format.parse(startDate);
+		Date filerEndDate = format.parse(endDate);
+		
+		if ((filterStartDate.compareTo(fileDate) * fileDate.compareTo(filerEndDate)) >= 0) {
+			result = true;
+		}
+		
+		return result;
+		
 	}
 	
 	public final String toCsvFormat () {

@@ -170,14 +170,13 @@ public class RunnableWorkerThread implements Runnable {
    	            logger.info (currentCurrency + " -> total records loaded " + historicalDataMap.get(currentCurrency).size());
     		}
     	} else {
-    		logger.info("ONLY database datasource allowed... for the moment");
-    		
 			String historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
 			String historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
 			String historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
 			int printAfter = ApplicationProperties.getIntProperty("test.printAfter");
     		
    	    	int totalCounter = 0;
+   	    	int lineNumber = 0;
 
     		String fileName = historicalDataPath + currentCurrency + historicalDataFileExtension;
     		
@@ -188,23 +187,27 @@ public class RunnableWorkerThread implements Runnable {
     	        String [] nextLine;
     	        while ((nextLine = reader.readNext()) != null) {
     	        	
-    	        	FxRate fxRate = new FxRate (currentCurrency,nextLine,totalCounter);
+    	        	FxRate fxRate = new FxRate (currentCurrency,nextLine,totalCounter,startDate,endDate);
     	        	
-					if (!historicalDataMap.containsKey(currentCurrency)) {
-						historicalDataMap.put(currentCurrency, new ArrayList<FxRate>());							
-					}
-					(historicalDataMap.get(currentCurrency)).add(fxRate);
+    	        	// Check if the fxRate has been created or excluded due to the date filtering
+    	        	if (currentCurrency.equals(fxRate.getCurrencyPair())) {
+    					if (!historicalDataMap.containsKey(currentCurrency)) {
+    						historicalDataMap.put(currentCurrency, new ArrayList<FxRate>());							
+    					}
+    					(historicalDataMap.get(currentCurrency)).add(fxRate);
 
-					if (totalCounter%printAfter == 0) {
-    		        	logger.debug ("  " + currentCurrency + " -> loaded " + totalCounter + " records so far");
-    				}
-					totalCounter++;
+    					if (totalCounter%printAfter == 0) {
+        		        	logger.debug ("  " + currentCurrency + " -> loaded " + totalCounter + " records so far");
+        				}
+    					totalCounter++;
+    	        	}
+    	        	lineNumber++;
     	        }
     	        logger.info (currentCurrency + " -> total records loaded " + totalCounter);
     	        reader.close();
     	    	
         	} catch (Exception ex) {
-        		logger.error ("Exception in file " + fileName + " - line " + totalCounter + " - " + ex.getClass() + " - " + ex.getMessage());
+        		logger.error ("Exception in file " + fileName + " - line " + lineNumber + " - " + ex.getClass() + " - " + ex.getMessage());
         	}
     	}
     	
