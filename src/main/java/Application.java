@@ -149,7 +149,13 @@ public class Application {
 			logger.info("All workers finished");
 			
 			logger.info ("Shutting down monitor thread..."); 
-			monitor.shutdown(); 
+			monitor.shutdown();
+
+			logger.debug ("executorPool");
+			logger.debug ("	Total Executions: " + executorPool.getTotalExecutions());
+			logger.debug ("	Max Execution   : " + executorPool.getMaxExecutionTime());
+			logger.debug ("	Min Execution   : " + executorPool.getMinExecutionTime());
+			logger.debug ("	Avg. Execution  : " + executorPool.getAvgExecutionTime());
 			
 		} catch (Exception e) { 
 			e.printStackTrace(); 
