@@ -196,14 +196,14 @@ public class Application {
 		logger.info ("**************************************************"); 
 		logger.info (title + " WorkerPool with the following parameters:"); 
 		logger.info ("**************************************************"); 
-		logger.info ("  - pool core size       : " + poolCoreSize); 
-		logger.info ("  - pool max size        : " + poolMaxSize); 
-		logger.info ("  - queue capacity       : " + queueCapacity); 
-		logger.info ("  - timeout (secs)       : " + timeoutSecs); 
-		logger.info ("  - retry sleep (ms)     : " + retrySleepTime); 
-		logger.info ("  - retry max attempts   : " + retryMaxAttempts);
-		logger.info ("  - initial sleep (secs) : " + initialSleep); 
-		logger.info ("  - monitor sleep (secs) : " + monitorSleep); 
+		logger.info ("  - pool core size           : " + poolCoreSize); 
+		logger.info ("  - pool max size            : " + poolMaxSize); 
+		logger.info ("  - queue capacity           : " + queueCapacity); 
+		logger.info ("  - timeout (secs)           : " + timeoutSecs); 
+		logger.info ("  - retry sleep (ms)         : " + retrySleepTime); 
+		logger.info ("  - retry max attempts       : " + retryMaxAttempts);
+		logger.info ("  - initial sleep (secs)     : " + initialSleep); 
+		logger.info ("  - monitor sleep (secs)     : " + monitorSleep); 
 		logger.info ("**************************************************");
 
 		logger.info ("");
@@ -253,10 +253,10 @@ public class Application {
 		logger.info ("");
 		logger.info ("Total figures:");
 		logger.info ("**************************************************");
-		logger.info ("  - Total historical data : " + String.format("%,d", totalHistoricalData));
-		logger.info ("  - Total calculations    : " + String.format("%,d", totalCalculations)); 
-		logger.info ("  - Total results         : " + String.format("%,d", totalResults));
-		logger.info ("  - Elapsed time: " + GeneralUtils.printElapsedTime (applicationStartTime,applicationStopTime)); 
+		logger.info ("  - Total historical data    : " + String.format("%,d", totalHistoricalData));
+		logger.info ("  - Total calculations       : " + String.format("%,d", totalCalculations)); 
+		logger.info ("  - Total results            : " + String.format("%,d", totalResults));
+		logger.info ("  - Elapsed time             : " + GeneralUtils.printElapsedTime (applicationStartTime,applicationStopTime)); 
 		logger.info ("**************************************************"); 
 		logger.info ("");
 		logger.info ("Results:");
