@@ -53,7 +53,7 @@ public class DatabaseConnection {
     }
     
 	public static void closeConnection () {
-	    if (instance.connection != null) {
+	    if (instance != null && instance.connection != null) {
 	        try {
 	        	instance.getConnection().close();
 	        } catch (SQLException e) { /* ignored */}
