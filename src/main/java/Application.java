@@ -1,5 +1,6 @@
 // /Library/Java/JavaVirtualMachines/jdk1.8.0_102.jdk/Contents/Home/jre/lib/rt.jar to be added to the classpath
 
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -260,7 +261,7 @@ public class Application {
 		logger.info ("");
 		logger.info ("Results:");
 		logger.info ("**************************************************");
-		logger.info ("Currency -> Level-[UP|DOWN]");
+		logger.info ("Currency -> Level-[UP|DOWN|TOTAL|%]");
 		logger.info ("");
 		
 		if (calcResultsMap != null && calcResultsMap.size() > 0) {
@@ -283,19 +284,29 @@ public class Application {
 		
 		StringBuilder stringBuilder = new StringBuilder();
 		
+		double referenceLevel = 0;
+
 		for (int i=1; i <= maxLevels; i++) {
+			long total=0;
 			stringBuilder.append(i + "-[");
 			if (levelsMap != null && levelsMap.containsKey("UP-"+i)) {
 				stringBuilder.append(levelsMap.get("UP-"+i));
+				total += levelsMap.get("UP-"+i);
 			} else {
 				stringBuilder.append("0");
 			}
 			stringBuilder.append("|");
 			if (levelsMap != null && levelsMap.containsKey("DOWN-"+i)) {
 				stringBuilder.append(levelsMap.get("DOWN-"+i));
+				total += levelsMap.get("DOWN-"+i);
 			} else {
 				stringBuilder.append("0");
 			}
+			stringBuilder.append("|");
+			stringBuilder.append(total);
+			stringBuilder.append("|");
+			if (i==1) referenceLevel = total;
+			stringBuilder.append(new DecimalFormat("#.##").format(total*100/referenceLevel));
 			stringBuilder.append("] ");
 		}
 		
