@@ -26,7 +26,25 @@ public class GeneralUtils {
 		}
 		return result;
 	}
-	
+
+	public static boolean checkIfFileExists (final String currentCurrency) {
+
+		boolean exists = false;
+
+		String historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
+		String historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
+
+		String file = historicalDataPath + currentCurrency + historicalDataFileExtension;
+
+		File f = new File(file);
+		if(f.exists() && !f.isDirectory()) {
+			exists = true;
+		}
+
+		return exists;
+
+	}
+
 	public static List<String> getFilesFromPath (final String path, final String extension) {
 		List<String> filesList = new ArrayList<String>();
 		File dir = new File(path);

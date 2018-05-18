@@ -16,6 +16,7 @@ import datamodel.CalcResult;
 import datamodel.FxRate;
 import utils.ApplicationProperties;
 import utils.DatabaseUtils;
+import utils.GeneralUtils;
 
 public class RunnableWorkerThread implements Runnable {
 
@@ -59,23 +60,29 @@ public class RunnableWorkerThread implements Runnable {
 			int maxLevels = ApplicationProperties.getIntProperty("execution.maxLevels");
 			String startDate = ApplicationProperties.getStringProperty("execution.startDate");
 			String endDate = ApplicationProperties.getStringProperty("execution.endDate");
-			
-			logger.info ("Populating historical data for " + currentCurrency);
-			histDataStartTime = System.currentTimeMillis();
-			totalHistDataLoaded = populateHistoricalFxData(currentCurrency,startDate,endDate);
-			histDataStopTime = System.currentTimeMillis();
-			logger.info ("Historical data populated for " + currentCurrency);
-			
-			logger.info ("Starting calculations for " + currentCurrency);
-			calculationStartTime = System.currentTimeMillis();
-			totalCalculations = executeCalculations (currentCurrency, increase, decrease, maxLevels);
-			calculationStopTime = System.currentTimeMillis();
-			logger.info ("Calculations completed for " + currentCurrency);
 
-			// Populates the Calculation Result Map
-			calcResultsMap.put(currentCurrency, new CalcResult(currentCurrency, increase, decrease, maxLevels, histDataStartTime, histDataStopTime, totalHistDataLoaded, calculationStartTime, calculationStopTime, totalCalculations, resultsMap));
-			
-			logger.info ("Finished calculations for " + currentCurrency + "[" + totalCalculations + "] in " + (calculationStopTime - calculationStartTime) + " ms");
+			if (checkIfCurrencyExists (currentCurrency)) {
+
+				logger.info ("Populating historical data for " + currentCurrency);
+				histDataStartTime = System.currentTimeMillis();
+				totalHistDataLoaded = populateHistoricalFxData(currentCurrency,startDate,endDate);
+				histDataStopTime = System.currentTimeMillis();
+				logger.info ("Historical data populated for " + currentCurrency);
+
+				logger.info ("Starting calculations for " + currentCurrency);
+				calculationStartTime = System.currentTimeMillis();
+				totalCalculations = executeCalculations (currentCurrency, increase, decrease, maxLevels);
+				calculationStopTime = System.currentTimeMillis();
+				logger.info ("Calculations completed for " + currentCurrency);
+
+				// Populates the Calculation Result Map
+				calcResultsMap.put(currentCurrency, new CalcResult(currentCurrency, increase, decrease, maxLevels, histDataStartTime, histDataStopTime, totalHistDataLoaded, calculationStartTime, calculationStopTime, totalCalculations, resultsMap));
+
+				logger.info ("Finished calculations for " + currentCurrency + "[" + totalCalculations + "] in " + (calculationStopTime - calculationStartTime) + " ms");
+			} else {
+				logger.error("No available data for " + currentCurrency);
+			}
+
 			latch.countDown();
 			
 			long stopTime = System.currentTimeMillis(); 
@@ -85,7 +92,19 @@ public class RunnableWorkerThread implements Runnable {
 			e.printStackTrace(); 
 		}
 	}
-	
+
+	public boolean checkIfCurrencyExists (final String currentCurrency) {
+
+		boolean exists = false;
+
+		if ("database".equals(datasource)) {
+			exists = DatabaseUtils.checkCurrencyTableExists(currentCurrency);
+		} else {
+			exists = GeneralUtils.checkIfFileExists(currentCurrency);
+		}
+		return exists;
+	}
+
 	// Executes calculations
     public long executeCalculations (final String currentCurrency, float increase, float decrease, int maxLevels) {
     	
@@ -170,15 +189,16 @@ public class RunnableWorkerThread implements Runnable {
    	            logger.info (currentCurrency + " -> total records loaded " + historicalDataMap.get(currentCurrency).size());
     		}
     	} else {
+
+   	    	int totalCounter = 0;
+   	    	int lineNumber = 0;
+
 			String historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
 			String historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
 			String historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
 			int printAfter = ApplicationProperties.getIntProperty("test.printAfter");
-    		
-   	    	int totalCounter = 0;
-   	    	int lineNumber = 0;
 
-    		String fileName = historicalDataPath + currentCurrency + historicalDataFileExtension;
+			String fileName = historicalDataPath + currentCurrency + historicalDataFileExtension;
     		
         	logger.info("Populating historical data from file (" + fileName + "). Fields separated by " + historicalDataSeparator.charAt(0));
         	

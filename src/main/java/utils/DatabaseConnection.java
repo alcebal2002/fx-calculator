@@ -21,13 +21,13 @@ public class DatabaseConnection {
 	//Logger
 	private static Logger logger = LoggerFactory.getLogger(DatabaseUtils.class);
 
-    private DatabaseConnection() throws SQLException {
+    private DatabaseConnection() {
         try {
             Class.forName("com.mysql.jdbc.Driver");
             logger.info ("Connecting to database..." + databaseUrl);
             this.connection = DriverManager.getConnection(databaseUrl, databaseUser, databasePass);
-        } catch (ClassNotFoundException ex) {
-        	logger.error ("Exception: " + ex.getClass() + " - " + ex.getMessage());
+        } catch (Exception ex) {
+        	logger.error ("Exception: unable to connect to database [" + databaseUrl + "]");
         }
     }
 

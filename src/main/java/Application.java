@@ -122,7 +122,7 @@ public class Application {
 	
 			CountDownLatch latch = new CountDownLatch(currencyPairs.size());
 			
-			List<String> existingCurrencies = DatabaseUtils.getExistingCurrencies();
+//			List<String> existingCurrencies = DatabaseUtils.getExistingCurrencies();
 					
 			for (String currentCurrency : currencyPairs) {
 				
@@ -131,12 +131,12 @@ public class Application {
 						(blockingQueue.size() < queueCapacity)) { // For LinkedBlockingQueue 
 			 */			
 
-				if (existingCurrencies.indexOf(currentCurrency.toUpperCase()) != -1) {				
-					executorPool.execute(new RunnableWorkerThread(datasource, currentCurrency, calcResultsMap, latch));
-				} else {
-					latch.countDown();
-					logger.info(currentCurrency + " -> Table not present in database, ignoring...");
-				}
+//				if (existingCurrencies.indexOf(currentCurrency.toUpperCase()) != -1) {
+				executorPool.execute(new RunnableWorkerThread(datasource, currentCurrency, calcResultsMap, latch));
+//				} else {
+//					latch.countDown();
+//					logger.info(currentCurrency + " -> Table not present in database, ignoring...");
+//				}
 			}
 
 			// Start the monitoring thread 

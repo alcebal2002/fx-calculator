@@ -28,38 +28,30 @@ public class DatabaseUtils {
 		Map<String,List<FxRate>> resultMap = new HashMap<String,List<FxRate>>();
 		
 		try {
-			try {
+			logger.info ("Retrieving historical rates from database for " + currentCurrency);
+			stmt = DatabaseConnection.getInstance().getConnection().createStatement();
+			sql = "SELECT * FROM historico_" + currentCurrency + " WHERE fecha >= STR_TO_DATE('" + startDate + "','%Y-%m-%d') AND fecha <= STR_TO_DATE('" + endDate + "','%Y-%m-%d') ORDER BY fecha ASC, hora ASC";
 
-				logger.info ("Retrieving historical rates from database for " + currentCurrency);
-				stmt = DatabaseConnection.getInstance().getConnection().createStatement();
-				sql = "SELECT * FROM historico_" + currentCurrency + " WHERE fecha >= STR_TO_DATE('" + startDate + "','%Y-%m-%d') AND fecha <= STR_TO_DATE('" + endDate + "','%Y-%m-%d') ORDER BY fecha ASC, hora ASC";
-				
-				rs = stmt.executeQuery(sql);
+			rs = stmt.executeQuery(sql);
 
-				int positionId = 0;
-				
-				while(rs.next()) {
-					//Retrieve by column name
-					String conversionDate = rs.getString("fecha");
-					String conversionTime = rs.getString("hora");
-					float open = rs.getFloat("apertura");
-					float high = rs.getFloat("alto");
-					float low = rs.getFloat("bajo");
-					float close = rs.getFloat("cerrar");
-					
-					if (!resultMap.containsKey(currentCurrency)) {
-						resultMap.put(currentCurrency, new ArrayList<FxRate>());
-					}
-					(resultMap.get(currentCurrency)).add(new FxRate(positionId, currentCurrency, conversionDate, conversionTime, open, high, low, close));
-					positionId++;
+			int positionId = 0;
+
+			while(rs.next()) {
+				//Retrieve by column name
+				String conversionDate = rs.getString("fecha");
+				String conversionTime = rs.getString("hora");
+				float open = rs.getFloat("apertura");
+				float high = rs.getFloat("alto");
+				float low = rs.getFloat("bajo");
+				float close = rs.getFloat("cerrar");
+
+				if (!resultMap.containsKey(currentCurrency)) {
+					resultMap.put(currentCurrency, new ArrayList<FxRate>());
 				}
-				rs.close();
-			} catch(Exception e) {
-				//Handle errors for Class.forName
-				logger.error ("Exception while executing " + sql);
-				logger.error ("Exception: " + e.getClass() + " - " + e.getMessage());
+				(resultMap.get(currentCurrency)).add(new FxRate(positionId, currentCurrency, conversionDate, conversionTime, open, high, low, close));
+				positionId++;
 			}
-	
+			rs.close();
 		} catch(Exception e) {
 			//Handle errors for Class.forName
 			logger.error ("Exception: " + e.getClass() + " - " + e.getMessage());
@@ -89,20 +81,20 @@ public class DatabaseUtils {
 		return resultMap;
 	}
 	
-	public static List<String> getExistingCurrencies () {
+	public static boolean checkCurrencyTableExists (final String currentCurrency) {
 		 
 		Statement stmt = null;
 		String sql = null;
 		ResultSet rs = null;
 
-		List<String> result = new ArrayList<String>();
+		boolean exists = false;
 		
 		try {
-			logger.info ("Checking currencies loaded in database");
+			logger.info ("Checking if currency table exists for " + currentCurrency);
 			
 			stmt = DatabaseConnection.getInstance().getConnection().createStatement();
 			
-			sql = "SELECT UPPER(SUBSTRING(table_name, 11)) as 'currency' FROM information_schema.TABLES WHERE table_name like 'historico_%' and data_length > 0";
+			sql = "SELECT UPPER(SUBSTRING(table_name, 11)) as 'currency' FROM information_schema.TABLES WHERE table_name like 'historico_" + currentCurrency + "' AND data_length > 0";
 			logger.info("Executing query: " + sql);
 			
 			try {
@@ -111,19 +103,21 @@ public class DatabaseUtils {
 
 				while(rs.next()) {
 					//Retrieve currency name
-					result.add(rs.getString("currency"));
+					if ((currentCurrency.toUpperCase()).equals(rs.getString("currency").toUpperCase())) {
+						exists = true;
+					}
 				}
 				rs.close();
-				
 			} catch(Exception e) {
 				//Handle errors for Class.forName
 				logger.error ("Exception while executing " + sql);
-				logger.error ("Exception: " + e.getClass() + " - " + e.getMessage());
+				logger.debug ("Exception: " + e.getClass() + " - " + e.getMessage());
 			}
 	
 		} catch(Exception e) {
 			//Handle errors for Class.forName
-			logger.error ("Exception: " + e.getClass() + " - " + e.getMessage());
+			logger.error ("Exception while checking if currency table exists for " + currentCurrency);
+			logger.debug ("Exception: " + e.getClass() + " - " + e.getMessage());
 		} finally {
 			//finally block used to close resources
 			try {
@@ -138,6 +132,6 @@ public class DatabaseUtils {
 				}
 			} catch (SQLException e) {}// nothing we can do
 		}
-		return result;
+		return exists;
 	}
 }
