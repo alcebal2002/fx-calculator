@@ -279,6 +279,7 @@ public class Application {
 			
 			if (writeResultsToFile) {
 				path = Paths.get(resultsPath + (LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HHmmss"))+".csv"));
+				GeneralUtils.writeTextToFile(path, printExecutionParams());
 				GeneralUtils.writeTextToFile(path, printCurrencyLevelsHeader(maxLevels));
 			}
 			
@@ -297,14 +298,28 @@ public class Application {
 					}
 				}
 			}
-		}
-		logger.info ("**************************************************");
-		logger.info("");
-		if (writeResultsToFile) {
-			logger.info("Results written into file: " + path.toString());
+			logger.info ("**************************************************");
+			logger.info("");
+			if (writeResultsToFile) {
+				logger.info("Results written into file: " + path.toString());
+			}
 		}
 	}
-	
+
+	// Print execution parameters
+	private static String printExecutionParams() {
+		StringBuilder stringBuilder =  new StringBuilder();
+		stringBuilder.append("datasource|"+datasource+"\n");
+		stringBuilder.append("currency pairs|"+currencyPairs.toString()+"\n");
+		stringBuilder.append("start date|"+startDate+"\n");
+		stringBuilder.append("end date|"+endDate+"\n");
+		stringBuilder.append("increase percentage|"+increasePercentage+"\n");
+		stringBuilder.append("decrease percentage|"+decreasePercentage+"\n");
+		stringBuilder.append("max. levels|"+maxLevels+"\n");
+
+		return (stringBuilder.toString());
+	}
+
 	// Print currency levels header
 	private static String printCurrencyLevelsHeader(final int maxLevels) {
 		StringBuilder stringBuilder =  new StringBuilder();
