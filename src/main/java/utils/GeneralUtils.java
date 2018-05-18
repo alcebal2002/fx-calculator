@@ -1,9 +1,16 @@
 package utils;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -68,5 +75,26 @@ public class GeneralUtils {
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
 
 		return ((endTime - startTime) + " ms - (" + hours + " hrs " + minutes + " min " + seconds + " secs)"); 
+	}
+	
+	// Wirte text to file 
+	public static void writeTextToFile (final Path path, final String text) {
+
+		BufferedWriter bWriter = null;
+
+		try {
+		    Files.write(path, Arrays.asList(text), StandardCharsets.UTF_8,
+		        Files.exists(path) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+		} catch (Exception e) {
+			logger.error ("Exception while writing the results to file: " + e.getClass() + " - " + e.getMessage());
+		} finally {
+			try {
+				if (bWriter != null)
+					bWriter.close();
+			} catch (IOException ex) {
+				logger.error ("Exception while closing the results file: " + ex.getClass() + " - " + ex.getMessage());
+			}
+		}
+
 	}
 }

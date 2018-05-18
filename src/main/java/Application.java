@@ -1,6 +1,13 @@
 // /Library/Java/JavaVirtualMachines/jdk1.8.0_102.jdk/Contents/Home/jre/lib/rt.jar to be added to the classpath
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -49,6 +56,8 @@ public class Application {
 	private static String historicalDataFileExtension;
 	private static String historicalDataSeparator;
 	private static int printAfter = 0;
+	private static boolean writeResultsToFile = false; 
+	private static String resultsPath;
 	
 	private static String datasource;
 
@@ -92,6 +101,7 @@ public class Application {
 
 		// Print results
         printResults ();
+        
 		logger.info("Application finished");
 		// Exit application
 		System.exit(0);
@@ -165,8 +175,11 @@ public class Application {
 		historicalDataPath = ApplicationProperties.getStringProperty("main.historicalDataPath");
 		historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
 		historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
+		
 		printAfter = ApplicationProperties.getIntProperty("test.printAfter");
-
+		writeResultsToFile = ApplicationProperties.getBooleanProperty("main.writeResultsToFile");
+		resultsPath = ApplicationProperties.getStringProperty("main.resultsPath");
+		
 		datasource = ApplicationProperties.getStringProperty("main.datasource");
 		databaseHost = ApplicationProperties.getStringProperty("database.host");
 		databasePort = ApplicationProperties.getStringProperty("database.port");
@@ -224,6 +237,9 @@ public class Application {
 		logger.info ("  - max. levels              : " + maxLevels);
 		logger.info ("  - number of records [test] : " + numberOfRecords); 
 		logger.info ("  - print after [test]       : " + printAfter);
+
+		logger.info ("  - write results to file    : " + writeResultsToFile);
+		logger.info ("  - results path             : " + resultsPath);
 		logger.info ("****************************************************");
 		logger.info ("");
 	}
@@ -234,7 +250,8 @@ public class Application {
 		long totalHistoricalData = 0;
 		long totalCalculations = 0;
 		long totalResults = 0;
-
+		Path path = null;
+		
 		if (calcResultsMap != null && calcResultsMap.size() > 0) {
 			Iterator<Entry<String, CalcResult>> iter = calcResultsMap.entrySet().iterator();
 			
@@ -245,6 +262,7 @@ public class Application {
 	            totalHistoricalData += ((CalcResult)entry.getValue()).getTotalHistDataLoaded();
 	        }
 		}
+		
 		logger.info ("");
 		logger.info ("Total figures:");
 		logger.info ("**************************************************");
@@ -256,34 +274,61 @@ public class Application {
 		logger.info ("");
 		logger.info ("Results:");
 		logger.info ("**************************************************");
-		logger.info ("Currency -> Level-[UP|DOWN|TOTAL|%]");
-		logger.info ("");
+		
 		
 		if (calcResultsMap != null && calcResultsMap.size() > 0) {
 
+			logger.info (printCurrencyLevelsHeader(maxLevels));
+			
+			if (writeResultsToFile) {
+				path = Paths.get(resultsPath + (LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HHmmss"))+".csv"));
+				GeneralUtils.writeTextToFile(path, printCurrencyLevelsHeader(maxLevels));
+			}
+			
 			for (String currency : currencyPairs) {
 				
 				if (calcResultsMap.containsKey(currency)) {
-					printCurrencyLevels (currency, ((CalcResult)calcResultsMap.get(currency)).getLevelResults(), maxLevels);
+					logger.info (printCurrencyLevels (currency, ((CalcResult)calcResultsMap.get(currency)).getLevelResults(), maxLevels));
+					
+					if (writeResultsToFile) {
+						GeneralUtils.writeTextToFile(path, printCurrencyLevels (currency, ((CalcResult)calcResultsMap.get(currency)).getLevelResults(), maxLevels));
+					}
 				} else {
-					printCurrencyLevels (currency, null, maxLevels);
+					logger.info (printCurrencyLevels (currency, null, maxLevels));
+					if (writeResultsToFile) {
+						GeneralUtils.writeTextToFile(path, printCurrencyLevels (currency, null, maxLevels));
+					}
 				}
 			}
 		}
 		logger.info ("**************************************************");
-		logger.info ("");
+		logger.info("");
+		if (writeResultsToFile) {
+			logger.info("Results written into file: " + path.toString());
+		}
+	}
+	
+	// Print currency levels header
+	private static String printCurrencyLevelsHeader(final int maxLevels) {
+		StringBuilder stringBuilder =  new StringBuilder();
+		stringBuilder.append("CURRENCYPAIR");
+		
+		for (int i=1; i <= maxLevels; i++) {
+			stringBuilder.append("|"+i+"-UP|"+i+"-DOWN|"+i+"-TOTAL|"+i+"-%");
+		}
+		
+		return (stringBuilder.toString());
 	}
 	
 	// Print currency result levels
-	private static void printCurrencyLevels (final String currency, final Map<String,Integer> levelsMap, final int maxLevels) {
+	private static String printCurrencyLevels (final String currency, final Map<String,Integer> levelsMap, final int maxLevels) {
 		
 		StringBuilder stringBuilder = new StringBuilder();
 		
 		double referenceLevel = 0;
-
+		
 		for (int i=1; i <= maxLevels; i++) {
 			long total=0;
-			stringBuilder.append(i + "-[");
 			if (levelsMap != null && levelsMap.containsKey("UP-"+i)) {
 				stringBuilder.append(levelsMap.get("UP-"+i));
 				total += levelsMap.get("UP-"+i);
@@ -301,11 +346,15 @@ public class Application {
 			stringBuilder.append(total);
 			stringBuilder.append("|");
 			if (i==1) referenceLevel = total;
-			stringBuilder.append(new DecimalFormat("#.##").format(total*100/referenceLevel));
-			stringBuilder.append("] ");
+
+			if (total == 0) {
+				stringBuilder.append("0");
+			} else {
+				stringBuilder.append(new DecimalFormat("#.##").format(total*100/referenceLevel));
+			}
+			stringBuilder.append("|");
 		}
 		
-		logger.info (currency + "-> " + stringBuilder.toString());
+		return (currency + "|" + stringBuilder.toString());
 	}
-
 }

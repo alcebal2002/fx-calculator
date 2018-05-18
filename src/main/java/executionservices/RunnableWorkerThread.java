@@ -115,10 +115,9 @@ public class RunnableWorkerThread implements Runnable {
 			for (FxRate originalFxRate : historicalDataMap.get(currentCurrency)) {
 				
 				int positionId = originalFxRate.getPositionId();
-				String currencyPair = originalFxRate.getCurrencyPair();
 				float opening = originalFxRate.getOpen();
 				
-				logger.debug ("Processing " + currencyPair + "-" + positionId);
+				logger.debug ("Processing " + currentCurrency + "-" + positionId);
 				
 				FxRate targetFxRate = null;
 				String previousFound = "";
@@ -129,11 +128,11 @@ public class RunnableWorkerThread implements Runnable {
 				for (int i=positionId+1; i<historicalDataMap.get(currentCurrency).size(); i++) {
 					targetFxRate = historicalDataMap.get(currentCurrency).get(i);
 					
-					if (originalFxRate.getCurrencyPair().equals(targetFxRate.getCurrencyPair())) {
+					if (currentCurrency.equals(targetFxRate.getCurrencyPair())) {
 					
 						logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
 						
-						if ((targetFxRate.getHigh() > opening * increase) && (indexUp <= maxLevels)) {
+						if ((targetFxRate.getHigh() > (opening * increase)) && (indexUp <= maxLevels)) {
 							if (("DOWN").equals(previousFound)) {
 								break;
 							}
@@ -147,7 +146,7 @@ public class RunnableWorkerThread implements Runnable {
 							previousFound = "UP";
 							opening = opening * increase;
 							indexUp++;
-						} else if ((targetFxRate.getLow() < opening * decrease) && (indexDown <= maxLevels)) {
+						} else if ((targetFxRate.getLow() < (opening * decrease)) && (indexDown <= maxLevels)) {
 							if (("UP").equals(previousFound)) {
 								break;
 							}
