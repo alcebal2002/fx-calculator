@@ -22,7 +22,6 @@ import executionservices.SystemMonitorThread;
 import executionservices.SystemThreadPoolExecutor;
 import utils.ApplicationProperties;
 import utils.DatabaseConnection;
-import utils.DatabaseUtils;
 import utils.GeneralUtils;
 
 public class Application {
@@ -122,21 +121,10 @@ public class Application {
 	
 			CountDownLatch latch = new CountDownLatch(currencyPairs.size());
 			
-//			List<String> existingCurrencies = DatabaseUtils.getExistingCurrencies();
-					
 			for (String currentCurrency : currencyPairs) {
 				
-			/*		
-				if ((executorPool.getActiveCount() < executorPool.getMaximumPoolSize()) ||
-						(blockingQueue.size() < queueCapacity)) { // For LinkedBlockingQueue 
-			 */			
-
-//				if (existingCurrencies.indexOf(currentCurrency.toUpperCase()) != -1) {
+				// if ((executorPool.getActiveCount() < executorPool.getMaximumPoolSize()) || (blockingQueue.size() < queueCapacity)) { // For LinkedBlockingQueue 
 				executorPool.execute(new RunnableWorkerThread(datasource, currentCurrency, calcResultsMap, latch));
-//				} else {
-//					latch.countDown();
-//					logger.info(currentCurrency + " -> Table not present in database, ignoring...");
-//				}
 			}
 
 			// Start the monitoring thread 
@@ -178,7 +166,6 @@ public class Application {
 		historicalDataFileExtension = ApplicationProperties.getStringProperty("main.historicalDataFileExtension");
 		historicalDataSeparator = ApplicationProperties.getStringProperty("main.historicalDataSeparator");
 		printAfter = ApplicationProperties.getIntProperty("test.printAfter");
-
 
 		datasource = ApplicationProperties.getStringProperty("main.datasource");
 		databaseHost = ApplicationProperties.getStringProperty("database.host");
