@@ -301,7 +301,6 @@ public class Application {
 	// Print execution parameters
 	private static String printExecutionParams() {
 		StringBuilder stringBuilder =  new StringBuilder();
-		stringBuilder.append("datasource|"+datasource+"\n");
 		stringBuilder.append("currency pairs|"+currencyPairs.toString()+"\n");
 		stringBuilder.append("start date|"+startDate+"\n");
 		stringBuilder.append("end date|"+endDate+"\n");
