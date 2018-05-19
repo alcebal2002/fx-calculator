@@ -132,41 +132,41 @@ public class RunnableWorkerThread implements Runnable {
 				for (int i=positionId+1; i<historicalDataMap.get(currentCurrency).size(); i++) {
 					targetFxRate = historicalDataMap.get(currentCurrency).get(i);
 					
-					if (currentCurrency.equals(targetFxRate.getCurrencyPair())) {
+//					if (currentCurrency.equals(targetFxRate.getCurrencyPair())) {
 					
-						logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
-						
-						if ((targetFxRate.getHigh() > (opening * increase)) && (indexUp <= maxLevels)) {
-							if (("DOWN").equals(previousFound)) {
-								break;
-							}
-							
-							if (resultsMap.containsKey("UP-"+indexUp)) {
-								resultsMap.put("UP-"+indexUp,resultsMap.get("UP-"+indexUp)+1);
-							} else {
-								resultsMap.put("UP-"+indexUp,1);
-							}
-							
-							previousFound = "UP";
-							opening = opening * increase;
-							indexUp++;
-						} else if ((targetFxRate.getLow() < (opening * decrease)) && (indexDown <= maxLevels)) {
-							if (("UP").equals(previousFound)) {
-								break;
-							}
-							
-							if (resultsMap.containsKey("DOWN-"+indexDown)) {
-								resultsMap.put("DOWN-"+indexDown,resultsMap.get("DOWN-"+indexDown)+1);
-							} else {
-								resultsMap.put("DOWN-"+indexDown,1);
-							}
-		
-							previousFound = "DOWN";
-							opening = opening * decrease;
-							indexDown++;			
+					logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
+
+					if ((targetFxRate.getHigh() > (opening * increase)) && (indexUp <= maxLevels)) {
+						if (("DOWN").equals(previousFound)) {
+							break;
 						}
-						totalCalculations++;
+
+						if (resultsMap.containsKey("UP-"+indexUp)) {
+							resultsMap.put("UP-"+indexUp,resultsMap.get("UP-"+indexUp)+1);
+						} else {
+							resultsMap.put("UP-"+indexUp,1);
+						}
+
+						previousFound = "UP";
+						opening = opening * increase;
+						indexUp++;
+					} else if ((targetFxRate.getLow() < (opening * decrease)) && (indexDown <= maxLevels)) {
+						if (("UP").equals(previousFound)) {
+							break;
+						}
+
+						if (resultsMap.containsKey("DOWN-"+indexDown)) {
+							resultsMap.put("DOWN-"+indexDown,resultsMap.get("DOWN-"+indexDown)+1);
+						} else {
+							resultsMap.put("DOWN-"+indexDown,1);
+						}
+
+						previousFound = "DOWN";
+						opening = opening * decrease;
+						indexDown++;
 					}
+					totalCalculations++;
+//					}
 				}
 			}
 		}
