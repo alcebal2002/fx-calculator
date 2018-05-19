@@ -71,9 +71,14 @@ public class Application {
 	private static float increasePercentage;
 	private static float decreasePercentage;
 	private static int maxLevels;
+
+	private static long totalExecutions;
+	private static long totalHistDataLoaded;
+	private static long totalCalculations;
+	private static long totalResults;
+	private static long avgExecutionTime;
 	
 	private static final String applicationId = (""+System.currentTimeMillis());
-
 	
 	// Lists and Maps
 	private static Map<String,CalcResult> calcResultsMap = new HashMap<String,CalcResult>();
@@ -146,12 +151,11 @@ public class Application {
 			logger.info ("Shutting down monitor thread..."); 
 			monitor.shutdown();
 
-			logger.debug ("executorPool");
-			logger.debug ("	Total Executions: " + executorPool.getTotalExecutions());
-			logger.debug ("	Max Execution   : " + executorPool.getMaxExecutionTime());
-			logger.debug ("	Min Execution   : " + executorPool.getMinExecutionTime());
-			logger.debug ("	Avg. Execution  : " + executorPool.getAvgExecutionTime());
-			
+			totalExecutions = executorPool.getTotalExecutions();
+			totalHistDataLoaded = executorPool.getTotalHistDataLoaded();
+			totalCalculations = executorPool.getTotalCalculations();
+			totalResults = executorPool.getTotalResults();
+			avgExecutionTime = executorPool.getAvgExecutionTime();
 		} catch (Exception e) { 
 			e.printStackTrace(); 
 		} finally {
@@ -244,30 +248,18 @@ public class Application {
 	// Print execution times
 	private static void printResults () {
 
-		long totalHistoricalData = 0;
-		long totalCalculations = 0;
-		long totalResults = 0;
 		Path path = null;
-		
-		if (calcResultsMap != null && calcResultsMap.size() > 0) {
-			Iterator<Entry<String, CalcResult>> iter = calcResultsMap.entrySet().iterator();
-			
-			while (iter.hasNext()) {
-	            Entry<String, CalcResult> entry = iter.next();
-	            totalCalculations += ((CalcResult)entry.getValue()).getTotalCalculations();
-	            totalResults += ((CalcResult)entry.getValue()).getLevelResults().size();
-	            totalHistoricalData += ((CalcResult)entry.getValue()).getTotalHistDataLoaded();
-	        }
-		}
-		
+
 		logger.info ("");
 		logger.info ("Total figures:");
 		logger.info ("**************************************************");
-		logger.info ("  - Total historical data    : " + String.format("%,d", totalHistoricalData));
+		logger.info ("  - Total executions         : " + String.format("%,d", totalExecutions));
+		logger.info ("  - Avg. execution time      : " + avgExecutionTime + " ms");
+		logger.info ("  - Total historical data    : " + String.format("%,d", totalHistDataLoaded));
 		logger.info ("  - Total calculations       : " + String.format("%,d", totalCalculations)); 
 		logger.info ("  - Total results            : " + String.format("%,d", totalResults));
-		logger.info ("  - Elapsed time             : " + GeneralUtils.printElapsedTime (applicationStartTime,applicationStopTime)); 
-		logger.info ("**************************************************"); 
+		logger.info ("  - Elapsed time             : " + GeneralUtils.printElapsedTime (applicationStartTime,applicationStopTime));
+		logger.info ("**************************************************");
 		logger.info ("");
 		logger.info ("Results:");
 		logger.info ("**************************************************");

@@ -32,7 +32,11 @@ public class RunnableWorkerThread implements Runnable {
 	private Map<String, CalcResult> calcResultsMap;
 	
 	private long elapsedTimeMillis;
-	
+	private long totalHistDataLoaded;
+	private long totalCalculations;
+	private long totalResults;
+
+
 	public RunnableWorkerThread ( final String datasource, final String currentCurrency, Map<String, CalcResult> calcResultsMap, CountDownLatch latch){
 		this.datasource = datasource;
 		this.currentCurrency = currentCurrency;
@@ -45,11 +49,9 @@ public class RunnableWorkerThread implements Runnable {
 		
 		long histDataStartTime;	
 		long histDataStopTime;
-		long totalHistDataLoaded;
-		long calculationStartTime;	
+		long calculationStartTime;
 		long calculationStopTime;
-		long totalCalculations;
-		
+
 		long startTime = System.currentTimeMillis();
 		
 		try {
@@ -73,8 +75,10 @@ public class RunnableWorkerThread implements Runnable {
 				calculationStartTime = System.currentTimeMillis();
 				totalCalculations = executeCalculations (currentCurrency, increase, decrease, maxLevels);
 				calculationStopTime = System.currentTimeMillis();
-				logger.info ("Calculations completed for " + currentCurrency);
 
+				totalResults = resultsMap.size();
+
+				logger.debug ("Populating Calculation Result Map for " + currentCurrency);
 				// Populates the Calculation Result Map
 				calcResultsMap.put(currentCurrency, new CalcResult(currentCurrency, increase, decrease, maxLevels, histDataStartTime, histDataStopTime, totalHistDataLoaded, calculationStartTime, calculationStopTime, totalCalculations, resultsMap));
 
@@ -236,8 +240,17 @@ public class RunnableWorkerThread implements Runnable {
     	
     	return result;
     }
-    
-	public long getElapsedTimeMillis () { 
-		return this.elapsedTimeMillis; 
+
+	public long getTotalResutls () {
+		return this.totalResults;
+	}
+	public long getTotalCalculations () {
+		return this.totalCalculations;
+	}
+	public long getTotalHistDataLoaded () {
+		return this.totalHistDataLoaded;
+	}
+	public long getElapsedTimeMillis () {
+		return this.elapsedTimeMillis;
 	}
 }
