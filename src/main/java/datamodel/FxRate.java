@@ -4,9 +4,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class FxRate implements Serializable {
+public class FxRate {
 
-	private static final long serialVersionUID = 1L;
 	private String currencyPair;
 	private int positionId;
 	private String conversionDate;
@@ -17,7 +16,7 @@ public class FxRate implements Serializable {
 	private float close;
 	
 	/**
-	 * @param id
+	 * @param positionId
 	 * @param currencyPair
 	 * @param conversionDate
 	 * @param conversionTime

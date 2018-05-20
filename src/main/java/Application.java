@@ -63,7 +63,6 @@ public class Application {
 	private static String databaseName;
 	private static String databaseUser;
 	private static String databasePass;
-
 	
 	private static List<String> currencyPairs;
 	private static String startDate;

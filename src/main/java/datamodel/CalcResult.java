@@ -2,9 +2,8 @@ package datamodel;
 import java.io.Serializable;
 import java.util.Map;
 
-public class CalcResult implements Serializable {
+public class CalcResult {
 
-	private static final long serialVersionUID = 1L;
 	private String currencyPair;
 	private float increase;
 	private float decrease;
