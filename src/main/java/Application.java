@@ -1,15 +1,11 @@
-// /Library/Java/JavaVirtualMachines/jdk1.8.0_102.jdk/Contents/Home/jre/lib/rt.jar to be added to the classpath
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -253,7 +249,7 @@ public class Application {
 		logger.info ("Total figures:");
 		logger.info ("**************************************************");
 		logger.info ("  - Total executions         : " + String.format("%,d", totalExecutions));
-		logger.info ("  - Avg. execution time      : " + avgExecutionTime + " ms");
+		logger.info ("  - Avg. execution time      : " + GeneralUtils.printElapsedTime (avgExecutionTime));
 		logger.info ("  - Total historical data    : " + String.format("%,d", totalHistDataLoaded));
 		logger.info ("  - Total calculations       : " + String.format("%,d", totalCalculations)); 
 		logger.info ("  - Total results            : " + String.format("%,d", totalResults));
@@ -306,6 +302,13 @@ public class Application {
 		stringBuilder.append("increase percentage|"+increasePercentage+"\n");
 		stringBuilder.append("decrease percentage|"+decreasePercentage+"\n");
 		stringBuilder.append("max. levels|"+maxLevels+"\n");
+		stringBuilder.append("Results"+"\n");
+		stringBuilder.append("total executions|"+String.format("%,d", totalExecutions)+"\n");
+		stringBuilder.append("avg. execution time|"+GeneralUtils.printElapsedTime (avgExecutionTime)+"\n");
+		stringBuilder.append("total historical data|"+String.format("%,d", totalHistDataLoaded)+"\n");
+		stringBuilder.append("total calculations|"+String.format("%,d", totalCalculations)+"\n"); 
+		stringBuilder.append("total results|"+String.format("%,d", totalResults)+"\n");
+		stringBuilder.append("elapsed time|"+GeneralUtils.printElapsedTime (applicationStartTime,applicationStopTime)+"\n");
 
 		return (stringBuilder.toString());
 	}

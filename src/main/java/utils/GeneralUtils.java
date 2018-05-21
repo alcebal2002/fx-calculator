@@ -23,7 +23,7 @@ public class GeneralUtils {
 	// Logger
 	private static Logger logger = LoggerFactory.getLogger(GeneralUtils.class);
 	
-	public final Date getDateFromString(final String date, final String format) {
+	public static final Date getDateFromString(final String date, final String format) {
 		Date result = null;
 		try {
 			// format example: "dd-mm-yyyy"
@@ -66,6 +66,13 @@ public class GeneralUtils {
 	public static String printElapsedTime (final long startTime, final long endTime) {
 		
 		long millis = endTime - startTime;
+		return (printElapsedTime(millis));
+	}
+	
+	public static String printElapsedTime (final long totalMillis) {
+		
+		long millis = totalMillis;
+		
 		long days = TimeUnit.MILLISECONDS.toDays(millis);
 		millis -= TimeUnit.DAYS.toMillis(days); 
 		long hours = TimeUnit.MILLISECONDS.toHours(millis);
@@ -74,8 +81,9 @@ public class GeneralUtils {
 		millis -= TimeUnit.MINUTES.toMillis(minutes); 
 		long seconds = TimeUnit.MILLISECONDS.toSeconds(millis);
 
-		return ((endTime - startTime) + " ms - (" + hours + " hrs " + minutes + " min " + seconds + " secs)"); 
+		return (millis + " ms - (" + hours + " hrs " + minutes + " min " + seconds + " secs)");
 	}
+
 	
 	// Wirte text to file 
 	public static void writeTextToFile (final Path path, final String text) {

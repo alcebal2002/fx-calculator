@@ -132,8 +132,6 @@ public class RunnableWorkerThread implements Runnable {
 				for (int i=positionId+1; i<historicalDataMap.get(currentCurrency).size(); i++) {
 					targetFxRate = historicalDataMap.get(currentCurrency).get(i);
 					
-//					if (currentCurrency.equals(targetFxRate.getCurrencyPair())) {
-					
 					logger.debug ("Comparing against " + targetFxRate.getCurrencyPair() + "-" + targetFxRate.getPositionId());
 
 					if ((targetFxRate.getHigh() > (opening * increase)) && (indexUp <= maxLevels)) {
@@ -166,7 +164,6 @@ public class RunnableWorkerThread implements Runnable {
 						indexDown++;
 					}
 					totalCalculations++;
-//					}
 				}
 			}
 		}

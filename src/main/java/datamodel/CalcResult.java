@@ -1,5 +1,4 @@
 package datamodel;
-import java.io.Serializable;
 import java.util.Map;
 
 public class CalcResult {
@@ -30,37 +29,15 @@ public class CalcResult {
 		this.levelResults = levelResults;
 	}
 	
-	public final String getCurrencyPair() {
-		return currencyPair;
-	}
-	public final float getIncrease() {
-		return increase;
-	}
-	public final float getDecrease() {
-		return decrease;
-	}
-	public final int getmaxLevels() {
-		return maxLevels;
-	}
-	public final long getHistDataStartTime() {
-		return histDataStartTime;
-	}
-	public final long getHistDataStopTime() {
-		return histDataStopTime;
-	}
-	public final long getTotalHistDataLoaded() {
-		return totalHistDataLoaded;
-	}
-	public final long getCalculationStartTime() {
-		return calculationStartTime;
-	}
-	public final long getCalculationStopTime() {
-		return calculationStopTime;
-	}
-	public final long getTotalCalculations() {
-		return totalCalculations;
-	}
-	public final Map<String,Integer> getLevelResults() {
-		return levelResults;
-	}
+	public final String getCurrencyPair() { return currencyPair; }
+	public final float getIncrease() { return increase; }
+	public final float getDecrease() { return decrease; }
+	public final int getmaxLevels() { return maxLevels; }
+	public final long getHistDataStartTime() { return histDataStartTime; }
+	public final long getHistDataStopTime() { return histDataStopTime; }
+	public final long getTotalHistDataLoaded() { return totalHistDataLoaded; }
+	public final long getCalculationStartTime() { return calculationStartTime; }
+	public final long getCalculationStopTime() { return calculationStopTime; }
+	public final long getTotalCalculations() { return totalCalculations; }
+	public final Map<String,Integer> getLevelResults() { return levelResults; }
 } 

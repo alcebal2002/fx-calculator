@@ -61,22 +61,17 @@ public class DatabaseUtils {
 				if (rs != null) {
 					rs.close();
 				}
-			} catch (SQLException e) {}// nothing we can do
+			} catch (SQLException e) {
+				logger.error ("SQLException: " + e.getClass() + " - " + e.getMessage());
+			}
 
 			try {
 				if (stmt != null) {
 					stmt.close();
 				}
-			} catch (SQLException e) {}// nothing we can do
-/*			
-			try {
-				if(conn != null) {
-					conn.close();
-				}
-			} catch(SQLException e) {
+			} catch (SQLException e) {
 				logger.error ("Exception: " + e.getClass() + " - " + e.getMessage());
 			}
-*/
 		}
 		return resultMap;
 	}
@@ -124,13 +119,17 @@ public class DatabaseUtils {
 				if (rs != null) {
 					rs.close();
 				}
-			} catch (SQLException e) {}// nothing we can do
+			} catch (SQLException e) {
+				logger.error ("SQLException: " + e.getClass() + " - " + e.getMessage());
+			}
 
 			try {
 				if (stmt != null) {
 					stmt.close();
 				}
-			} catch (SQLException e) {}// nothing we can do
+			} catch (SQLException e) {
+				logger.error ("Exception: " + e.getClass() + " - " + e.getMessage());
+			}
 		}
 		return exists;
 	}
