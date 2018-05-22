@@ -26,6 +26,7 @@ import utils.GeneralUtils;
 
 public class Application {
 
+	// TEST
 	// Logger
 	private static Logger logger = LoggerFactory.getLogger(Application.class);
 
